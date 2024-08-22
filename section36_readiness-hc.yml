@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hc-probe
+spec:
+  containers:
+    - name: nginx
+      image: k8s.gcr.io/nginx
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 3
+        periodSeconds: 3
+
+#CONTAINERS Health:
+
+#1) Kubernetes is feature Rich, and provide number of features to monitor the containers.
+#2) Active Monitoring Helps K8s to decide the container state and Auto Restart in Case of Container Failure.
+
+#Readiness Probe :
+#1) Readiness is used to detect if a container is ready to accept traffic.
+#2) Sometimes application might need to load large data or configuration files during startup, or depend on external services after startup.
+#3) NO Traffic will be sent to a pod until container pass the Readiness Probe.
+#4) Readiness Probe manifest.
+#5) Configuration for HTTP readiness probes also remains identical to liveness probes.
+#6) Readiness and liveness probes can be used in parallel for the same container.
+
+#Steps:
+# Execute on singlenode.
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using readiness.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>
