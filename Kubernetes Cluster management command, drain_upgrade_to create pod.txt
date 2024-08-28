@@ -1,0 +1,31 @@
+Cluster management commands
+
+1) SSH to master node
+2) Verify connected nodes "kubectl get nodes"
+3) Check list of pods on cluster "kubectl get pods -o wide"
+4) create pod using yml file.
+   a) mkdir draining_pod_test
+   b) cd draining_pod_test
+   c) sudo nano pods.yml
+   e) copy the content in file and save the file.
+   f) note: copy the content from file podstest.yml
+5) apply the file on kubernetes
+   kubectl apply -f <filename>
+6) verify if pods is deployed
+   kubectl get pods -o wide
+7) deploy the service/container on pod
+   a) create a yaml file for deployment.
+   b) sudo nano deployment.yml
+   c) copy the content in file and save the file
+   d) note: copy the content from file deploymenttest.yml
+8) apply the file on kubernetes
+   kubectl apply -f <filename>
+9) verify if pods is deployed
+   kubectl get pods -o wide
+10) we notice that pods are deployed on worker nodes.
+11) to drain the node for upgrade or maintances
+    kubectl drain <workernode_name> --ignore-daemonsets --force
+12) verify the nodes
+    kubectl get nodes
+13) to uncordon or join back the node to cluster
+    kubectl uncordon  <workernode_name>
