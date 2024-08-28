@@ -1,0 +1,27 @@
+1) We deploy the HA setup.
+2) Deploy the deployment.yaml (refer section34_deployment.yaml)
+   # steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+# 7) Command to drain the worker nodes
+#   kubectl drain <worker-node-name> --ignore-daemonsets --force
+# 8) Command to attch node back
+#  kubectl uncordon <worker-node-name>
+
+3) Perform all the steps above
+4) Deploy the pod.yaml (refer section34_pod.yaml)
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+# 7) Command to drain the worker nodes
+#   kubectl drain <worker-node-name> --ignore-daemonsets --force
+# 8) Command to attch node back
+#  kubectl uncordon <worker-node-name>
+5) Perform all the steps above

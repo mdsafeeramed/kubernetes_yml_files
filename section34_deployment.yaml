@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: draining-node-test-deployment
+    labels:
+        app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+        containers:
+        - name: nginx
+          image: nginx:latest 
+          ports:
+          - containerPort: 80
+  
+# Execute on HA SETUP Master node
+# Section 34 Lab Number 212
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+# 7) Command to drain the worker nodes
+#   kubectl drain <worker-node-name> --ignore-daemonsets --force
+# 8) Command to attch node back
+#  kubectl uncordon <worker-node-name>
