@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: logging
+spec:
+  selector:
+    matchLabels:
+      app: httpd-logging
+  template:
+    metadata:
+      labels:
+        app: httpd-logging
+    spec:
+      containers:
+        - name: webserver
+          image: httpd
+          ports:
+            - containerPort: 80
+
+
+# Execute on HA SETUP Master node
+# Section 37 Lab Number 238
+
+# Manifest explanation:
+
+# kind: DaemonSet -> is a object.
+# Selector can be used to identify the pods running in your K8s on the basis of that particular label.
+# Selector has there own template, metadat and specification.
+# Note: Labels under selector and template should be same.
+
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using daemonsets.yaml
+# 3) Copy the content from above and save the file.
+# 4) Create a pod, kubectl apply -f <file-name.yml>
+# 5) Check if pod is created, kubectl get daemonsets
+# we notice that 3 daemonsets are running, one each on all nodes.
+# suppose if u have foure nodes, then it will have 4 daemonsets, one each on all nodes.
+# 6) Check pods, kubectl get pods -o wide
+# we notice that 3 pods are running, one each on all nodes 
+# 7) Check describe of pod, kubectl describe pod <pod-name>
+# 8) Check deamonset, kubectl describe daemonsets <daemonset_name>

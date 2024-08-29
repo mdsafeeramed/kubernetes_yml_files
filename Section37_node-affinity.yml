@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-nodeaffinity
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: disktype
+                operator: In
+                values:
+                  - ssd
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-node-anti-affinity
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: disktype
+                operator: NotIn
+                values:
+                  - ssd
+
+# Execute on HA SETUP Master node
+# Section 37 Lab Number 242
+
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using nodeaffinity.yaml
+# 3) Copy the first content from above and save the file.
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: nginx-nodeaffinity
+#spec:
+#  containers:
+#    - name: nginx
+#      image: nginx
+#  affinity:
+#    nodeAffinity:
+#      requiredDuringSchedulingIgnoredDuringExecution:
+#        nodeSelectorTerms:
+#          - matchExpressions:
+#              - key: disktype
+#                operator: In
+#                values:
+#                  - ssd
+
+# 4) execute folowing command to check label attch to node
+#    kubectl get nodes --show-labels
+# 5) Create a pod, kubectl apply -f <file-name.yml>
+# 6) Check if pod is created, "kubectl get pods -o  wide"
+# we see that pod is deployed on node which has label disktype=ssd
+# 7) Now create one more manifest for node anti-affinity
+# 8) Go to vi editor and name it using node-anti-affinity.yaml
+# 9) Copy the first second content from above and save the file.
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: nginx-nodeaffinity
+#spec:
+#  containers:
+#    - name: nginx
+#      image: nginx
+#  affinity:
+#    nodeAffinity:
+#      requiredDuringSchedulingIgnoredDuringExecution:
+#        nodeSelectorTerms:
+#          - matchExpressions:
+#              - key: disktype
+#                operator: NotIn
+#                values:
+#                  - ssd
+# 10) Create a pod, kubectl apply -f <file-name.yml>
+# 11) Check if pod is created, "kubectl get pods -o  wide"
+#Note: we see that pod is deployed on node which does not have this label disktype=ssd
+
+

@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-nodeselector
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+  nodeSelector:
+    disktype: ssd
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-nodename
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+  nodeName: k8s-worder-01
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-app
+spec:
+  containers:
+    - name: app
+      image: alpine
+      command:
+        - sleep
+        - '3600'
+      resources:
+        requests:
+          memory: 64Mi
+          cpu: 1000m
+  nodeSelector:
+    disktype: ssd
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-app-2
+spec:
+  containers:
+    - name: app
+      image: alpine
+      command:
+        - sleep
+        - '3600'
+      resources:
+        requests:
+          memory: 64Mi
+          cpu: 1000m
+
+# Execute on HA SETUP Master node
+# Section 37 Lab Number 236
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using nodeselector.yaml
+# 3) copy the only first content up to first _ _ _ (nodeselector) from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods (Note: pods is in pending state because need to configured label on nodes)
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+# 7) To Check label is configured on nodes "Kubectl get nodes --show-labels"
+# 8) Create a lable on nodes
+#   kubectl label nodes <node_name> key=value
+#   kubectl label nodes worker-node1 disktype=ssd
+# Note: We get node name from "kubectl get nodes"
+# 9) Check if pod is created, kubectl get pods
+# 10) Let deploy pod using nodeName
+# 11) Go to vi editor and name it using nodename.yaml
+# 12) copy the only second contents up to  _ _ _ (nodename) from above and save the file.
+# 13) Change the nodeName parameters has nodename got in "kubectl get nodes"
+#testingworld@k8s-master-IP36:~/safscripts$ kubectl get nodes
+#NAME                             STATUS   ROLES           AGE   VERSION
+#k8s-master-ip36.blr.local        Ready    control-plane   32d   v1.30.3
+#k8s-workernode1-ip37.blr.local   Ready    <none>          32d   v1.30.3
+#k8s-workernode2-ip38.blr.local   Ready    <none>          32d   v1.30.3
+
+#apiVersion: v1
+#kind: Pod
+#metadata:
+  #name: nginx-nodename
+#spec:
+  #containers:
+   # - name: nginx
+   #   image: nginx
+  #nodeName: k8s-workernode1-ip37.blr.loca
+
+# 14) create a pod, kubectl apply -f <file-name.yml>
+# 15) check if pod is created, kubectl get pods
+# 16) check describe of pod, kubectl desribe pod <pod-name>
+# 18) Let deploy pod using resource request and nodeSelector
+# 19) Go to vi editor and name it using nodename.yaml
+# 20) Copy the only Thrid contents up to  _ _ _ (nodeSelector) from above and save the file.
+#apiVersion: v1
+#kind: Pod
+#metadata:
+  #name: frontend-app
+#spec:
+  #containers:
+    #- name: app
+    #  image: alpine
+    #  command:
+    #    - sleep
+    #    - '3600'
+    #  resources:
+    #    requests:
+    #      memory: 64Mi
+    #      cpu: 1000m
+  #nodeSelector:
+    #disktype: ssd
+# 21) create a pod, kubectl apply -f <file-name.yml>
+# Note: POD will be deployed only if resource request is met then label "disktype: ssd" is met
+# if both the request met, pod will get deployed.
+# if any one is not metting the request, then pod will created but it will on pending state.
+# 22) check if pod is created, kubectl get pods
+# 23) check describe of pod, kubectl desribe pod <pod-name>
+# 24) vi editor with name req2-pod.yml
+# 25) Copy the only fourth contents where we have not specified the nodeselector from above and save the file.
+#apiVersion: v1
+#kind: Pod
+#metadata:
+  #name: frontend-app-2
+#spec:
+  #containers:
+    #- name: app
+    #  image: alpine
+    #  command:
+    #    - sleep
+    #    - '3600'
+    #  resources:
+    #    requests:
+    #      memory: 64Mi
+    #      cpu: 1000m
+# 26) create a pod, kubectl apply -f <file-name.yml>
+# Note: if resource is available on any of nodes, POD will be deployed on that node
+# 27) Check if pod is created, kubectl get pods
+# 28) Check describe of pod, kubectl desribe pod <pod-name>
+
