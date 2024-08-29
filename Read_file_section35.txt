@@ -1,0 +1,69 @@
+# Kubernetes RBAC:
+
+1) K8s allows to manage the User Access in K8s Cluster.
+2) Admins can restrict the User Read/Write Access in Kubernetes Cluster
+
+# K8s RBAC Objects
+
+1) Roles and ClusterRoles are K8s Objects that define set of permissions.
+2) Roles define permission within namespace.
+3) ClusterRoles define permission across the cluster. Not limited to specific namespace. 
+4) RoleBinding Object connects Roles to user.
+5) ClusterBinding Object connects ClusterRoles to Users
+
+Hands_on :
+
+To Create RBAC in k8s cluster
+Note: RBAC can created for namespaces only
+# these commands can be executed in minikube(singlenode) or HA setups
+
+1) Install openssl in your box.
+sudo apt-get install openssl
+2) Check how many namespaces are present in k8s cluster.
+kubectl get namespaces
+3) Follow each steps mentioned in section35_Role+Base+Access+in+K8s
+4) Once createing Users, role and rolebinding is done.
+
+
+# Service account:
+
+1) In K8s, Service Account used by container process to Authenticate with K8s APIs.
+2) If Pods needs to communicate with K8s APIs. User need to setup service account to control the access.
+3) Service account can be created like any other Kubernetes Object using YAML file.
+
+# Role Binding Service Accounts:
+
+1) Service Account Access also manage by RBAC.
+2) Bind Service Accounts with Cluster Role or ClusterRoleBinding to provide access to Cluster APIs.
+
+Hands_on:
+
+1) To check how many service account is present
+    kubectl get serviceaccounts
+2) To Check is service account is present for specific namespace
+    kubectl get serviceaccounts -n <namespace_name>
+    eg : kubectl get serviceaccounts -n development
+3) TO check how many services are running in kube-system namespace
+    kubectl get serviceaccounts -n kube-system
+4) Go to directory where scripts are stored (cd myscripts)
+5) vi my-serviceaccount.yml
+    refer section35_my-serviceaccount.yml
+    copy the content, paste in vi and save and exit
+6) create service account:
+   kubectl apply -f my-serviceaccount.yml
+7) To Check is service account is present for specific namespace
+    kubectl get serviceaccounts -n <namespace_name>
+    eg : kubectl get serviceaccounts -n development
+8) To check roles are present in namespaces
+   kubectl get roles -n development
+   Note: In above scearios/RBAC we have created the roles under development namespace
+9) Now we have perform serviceaccount role binding'
+10) vi service-account-binding.yml
+    refer section35_service-account-binding.yml
+    copy the content, paste in vi and save and exit
+11) create service account binding with role:
+   kubectl apply -f service-account-binding.yml
+12) To check rolebinding in namespace
+   kubectl get rolebinding -n development
+
+    
