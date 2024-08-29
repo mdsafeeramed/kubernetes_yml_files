@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restart-always-pod
+spec:
+  restartPolicy: Always
+  containers:
+    - name: app
+      image: alpine
+      command: ["sleep", "20"]
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: onfailure-always-pod
+spec:
+  restartPolicy: OnFailure
+  containers:
+    - name: app
+      image: alpine
+      command: ["sleep", "20"]
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: never-always-pod
+spec:
+  restartPolicy: Never
+  containers:
+    - name: app
+      image: alpine
+      command: ["sleep", "20"]
+
+# Restart Policy
+# Self Healing Pods in kubsernetes.
+# Container Restart Policies
+# 1) Always
+# 2) OnFailure
+# 3) Never
+
+#Restart Policies
+#1) Kubernetes have capability to Auto Restart the containers when they fails.
+#2) RestartPolicies customize the K8s Container Restart behaviour and you can choose when to Restart the Containers.
+#3) K8s have three restartPolicies - Always, OnFailure & Never
+
+#Always Restart Policy
+#1) Always is default restart policy in K8s.
+#2) With Always Policy, containers always restart even if container completed successfully.
+#3) This policy is recommended for containers that should always be in running state.
+
+#OnFailure Restart Policy
+#1) OnFailure is only works, if container Process exit with Error code.
+#2) It also works if container liveness probe determine the container unhealthy.
+#3) Use this policy on application that needs to be run successfully and then Stop.
+
+#Never Restart Policy
+#1) Never allow container to never restart even the container liveness probe failed.
+#2) Use this for application that Run only Once and never automatically restarted.
+
+# steps
+# execute on singlenode
+
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using liveness.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+# 7) to check onfailure scenario, change the command for onfailure sceanrio in manifest file.
+#    restartPolicy: OnFailure
+#  containers:
+#    - name: app
+#      image: alpine
+#      command: ["sh", "-c", "sleep 20", "dummy command"]
+# on dummy command container with fail and restart.
+# Note: in onfailure only on failure it will restart
+
+

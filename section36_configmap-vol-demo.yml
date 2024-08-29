@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: saf-configmap-vol-demo
+spec:
+  containers:
+    - name: configmap-vol-demo
+      image: alpine
+      command: ["sleep", "3600"]
+      volumeMounts:
+      - name: player-map  # Name given to volume, it should be same in volumemount and volume section
+        mountPath: /etc/config/configMap  # mounting configmap to this path
+      - name: player-secret # Name given to volume, it should be same in volumemount and volume section
+        mountPath: /etc/config/secret # mounting secrets to this path
+  volumes:
+    # You set volumes at the Pod level, then mount them into containers inside that Pod
+    - name: player-map
+      configMap:
+        # Provide the name of the ConfigMap you want to mount.
+        name: saf-player-pro-demo  # config-map name which we have created in cluster
+    - name: player-secret
+      secret:
+        secretName: example-secret # secrets name which we have created in cluster
+
+
+# execute on singlenode
+# Volume : another method to pass data to container using volmues.
+# Steps 
+  # Go to Directory
+  # go to vi editor and copy the above content
+  # save and exit
+  # create pods with volumes and volume mounts, kubectl apply -f <filename.yaml>
+  # Check pods is created, kubectl get pods
+  # login or get inside the deployed container, kubectl exec <name-of the pod> -it -- sh
+  # for alphine container is sh, for linux, rhel..../bin/bash or /bin/sh
+  # will get inside the container, execute below command to get env variable values
+  # / #
+  # / #
+  # / # cd /etc/config/configMap
+  # /etc/config/configMap # ls
+  # base.properties            player_lives               properties_file_name       user-interface.properties
+  # /etc/config/configMap # cat user-interface.properties
+  # color.good=purple
+  # color.bad=yellow
+  # allow.textmode=true
+  # /etc/config/configMap # cd ..
+  # /etc/config # ls
+  # configMap  secret
+  # /etc/config # cd secret/
+  # /etc/config/secret # ls
+  # password  username
+  # /etc/config/secret # cat username
+  # YWRtaW4=/etc/config/secret #
+  # /etc/config/secret #
+  # /etc/config/secret #
+  # /etc/config/secret # exit

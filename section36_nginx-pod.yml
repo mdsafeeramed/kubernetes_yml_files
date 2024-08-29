@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+    - name: nginx-container
+      image: 'nginx:1.19.1'
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: nginx-config-volume
+          mountPath: /etc/nginx
+        - name: htpasswd-volume
+          mountPath: /etc/nginx/conf
+  volumes:
+    - name: nginx-config-volume
+      configMap:
+        name: nginx-config-file
+    - name: htpasswd-volume
+      secret:
+        secretName: nginx-htpasswd
+
+# executed on singlenode
+# We try again the config map and secret.
+# this time we will read the config map and secret from a file and we will set up a practical nginx pod
+# we will create a secret from a file.
+# Then we will create a config map from a file.
+# In The Secret from a file, we will create a secret of password and in the create config from a file,
+# we will create a custom and nginx file.
+# Then we will set up an nginx pod and we will set up a pod that will authenticate from a HT access password.
+
+# Prequiste before executing this manifest.
+# Need to install the ht access(apache2-utils) on singlenode 
+# a) cd to the directory where script are stored.
+# b) sudo apt-get update
+# c) sudo install apache2-utils
+# d) To create HT access, will need to execute this command
+#   htpasswd -c .htpasswd user
+# user is username, create password and remember.
+# e) execute ls command
+# we see that .htpasswd is created.
+# f) if we cat .htpasswd , we will see the encrpted password.
+# g) Now we need to create the secret file using these htpasswd.
+# h) kubectl create secret generic <name as you want> --from-file .htpasswd
+#    kubectl create secret generic nginx-htpasswd --from-file .htpasswd
+# i) check if secret file is created
+#   kubectl get secrets
+# j) kubectl describe secrets <secret file name>
+# k) Once we created secret in cluster, we can remove the .htpasswd file
+#   rm -f .htpasswd
+# L) Now we need to create a configMap from the nginc conf file.
+# Note: copy the content from nginx.conf 
+# m) go to vi editor and name nginx.conf
+# paste the copied content in vi editor, save and exit.
+# n) Now create a configmap.
+#  kubectl create configmap <give_new_file_name> --from-file <confg file name>
+#  kubectl create configmap nginx-config-file --from-file nginx.conf
+# o) describe the create configmap
+#  kubectl describe configmap nginx-config-file
+# p) Now we have created config and secret in cluster, next deploy pod using these config and secret maps and volume method.
+# q) go to vi editor and name it has nginx-pod.yaml
+# r) copy the content from above and save and exit
+# s) create a pod, kubectl apply -f <nginx-pod.yaml>
+# t) kubectl get pods
+# u) curl <ip addres of pod>
+# Note: we get error cos we need authentication.
+# v) curl -u <username>:<password> <ip adress of pod> 
+#    curl -u user:test123 172.17.0.5
+# Now we are able to authenticate to nginx application
+

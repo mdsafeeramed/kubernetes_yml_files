@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: saf-player-pro-demo
+data:
+  # property-like keys; each key maps to a simple value
+  player_lives: "5"
+  properties_file_name: "user-interface.properties"
+
+  # file-like keys
+  base.properties: |
+    enemy.types=aliens,monsters
+    player.maximum-lives=10   
+  user-interface.properties: |
+    color.good=purple
+    color.bad=yellow
+    allow.textmode=true  
+
+  # Config map on singlenode
+  # what is config map : is to pass the non sensitive data to application dynamically.
+  # a) First we need to create a data using configmap or secrets file in cluster.
+  # b) Then we will pass the data to containers using env variables or volume or configposix
+  # refer env variables or volume or configposix yaml for details.
+  # secrete is to pass the sensitive data like username and password to application.
+
+  # Steps 
+  # Go to Directory
+  # go to vi editor and copy the above content
+  # save and exit
+  # create configmap kubectl apply -f <filename.yaml>
+  # Check config map, kubectl get configmaps
+  # To describe the config map, kubectl describe configmap <config-map-name>
+  # 

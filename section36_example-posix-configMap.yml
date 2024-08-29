@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: player-posix-demo
+data:
+  PLAYER_LIVES: "5"
+  PROPERTIES_FILE_NAME: "user-interface.properties"
+  BASE_PROPERTIES: "Template1"
+  USER_INTERFACE_PROPERTIES: "Dark"
+
+  # Execute on singlenode
+  # posix(pause 9): this another methos to pass data to containers.
+  # in env variables we have to specify the env variables for each properties.
+  # But in pos 9, it create one env variables for all automatically.
+  # syntax is strict.
+  # a) Keys should be in captial letters only.(No small letters)
+  # b) No space betwen keys, _ "underscore" should be used.
+  # c) Important, One to one mapping, we cannot have mutiple values for single key.
+  # In env we can have mutiple values for single key.
+  # d) for eg: Keys(PLAYER_LIVES) going to env names and values(5) will be env values.
+
+
+  # Steps 
+  # Go to Directory
+  # go to vi editor and copy the above content
+  # save and exit
+  # create configmap kubectl apply -f <filename.yaml>
+  # Check config map, kubectl get configmaps
+  # To describe the config map, kubectl describe configmap <config-map-name>
+  # 

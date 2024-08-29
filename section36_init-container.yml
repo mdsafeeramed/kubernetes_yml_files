@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: application-pod
+spec:
+  containers:
+    - name: myapp-container
+      image: busybox:1.28
+      command: ["sh", "-c", "echo The app is running! && sleep 3600"]
+  initContainers:
+    - name: init-myservice
+      image: busybox:1.28
+      command:
+        [
+          "sh",
+          "-c",
+          "until nslookup myservice.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for myservice; sleep 5; done",
+        ]
+    - name: init-mydb
+      image: busybox:1.28
+      command:
+        [
+          "sh",
+          "-c",
+          "until nslookup mydb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 5; done",
+        ]
+
+#Init Containers
+#1) Init Containers are specialized containers that run before app containers in a Pod.
+#2) Init Container only run once during the start-up process of Pod.
+#3) Init containers can contain utilities or setup scripts not present in an app image.
+#4) User Can define N Number of Init Container in Pod.
+
+#Init Containers: Use Case
+#1) SetUp the Application Init or SetUp Scripts.
+#2) Init containers offer a mechanism to block or delay app container startup until a set of preconditions are met.
+#3) Init containers can securely run utilities or custom code that would otherwise make an app container image less secure.
+#4) Populate Data at Shared Volume before Application StartUp.
+
+#Steps:
+# Execute on singlenode.
+
+# steps
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using initcontainers.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if init container status, kubectl get -f <initcontainer-file-name.yml>
+# 6) Check services, kubectl get services
+# 7) check describe of pod, kubectl desribe pod <pod-name>
+# 8) check if init container status, kubectl get -f <initcontainer-file-name.yml>
+# We notice that init containers are not ready, cos as we are looking nslookup for the particular service.
+# we need to deploy services.
+# 9) create service using file name section37_initcontainer-dependency-service.yml
+# 10) create a service, kubectl apply -f section37_initcontainer-dependency-service.yml
+# 11) get status of services, kubectl get -f <section37_initcontainer-dependency-service.yml>
+# 12) check if init container status, kubectl get -f <initcontainer-file-name.yml>
+# Now init containers are running.
+
+
+

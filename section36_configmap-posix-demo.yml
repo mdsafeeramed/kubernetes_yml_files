@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-posix-demo
+spec:
+  containers:
+    - name: configmap-posix
+      image: anshuldevops/kubernetes-web:1.10.6
+      ports:
+        - containerPort: 8080
+      envFrom:
+        - configMapRef:
+            name: player-posix-demo  # same name has we created posix configmap
+
+
+# Execute on singlenode
+# Create a pod with posix configmap env variables.
+
+
+# Steps 
+  # Go to Directory
+  # go to vi editor and copy the above content
+  # save and exit
+  # create pods and env variables kubectl apply -f <filename.yaml>
+  # Check pods is created, kubectl get pods
+  # login or get inside the deployed container, kubectl exec <name-of the pod> -it -- /bin/bash
+  # for alphine container is sh, for linux, rhel..../bin/bash or /bin/sh
+  #  testingworld@k8s-single-pod-IP35:~/safscripts$ kubectl exec configmap-posix-demo -it -- /bin/bash
+  # root@configmap-posix-demo:/usr/src/app#
+  # root@configmap-posix-demo:/usr/src/app#
+  # root@configmap-posix-demo:/usr/src/app# ls
+  # Dockerfile  node_modules  package-lock.json  package.json  server.js
+  # root@configmap-posix-demo:/usr/src/app#
+  # root@configmap-posix-demo:/usr/src/app#
+  # root@configmap-posix-demo:/usr/src/app# printenv
+  # NODE_VERSION=8.11.3
+  # HOSTNAME=configmap-posix-demo
+  # KUBERNETES_PORT_443_TCP_PORT=443
+  # PROPERTIES_FILE_NAME=user-interface.properties
+  # PLAYER_LIVES=5
+  # BASE_PROPERTIES=Template1
+  # USER_INTERFACE_PROPERTIES=Dark
+  # _=/usr/bin/printenv
+  # root@configmap-posix-demo:/usr/src/app# exit
+  # exit
+  # testingworld@k8s-single-pod-IP35:~/safscripts$
+
+
+

@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-secret
+type: Opaque
+stringData:
+  username: YWRtaW4=
+  password: YWRtaW5wYXNzd29yZA==
+
+    # Secret on singlenode
+    # secrete is to pass the sensitive data like username and password to application dynamically.
+    # a) First we need to create a data using configmap or secrets file in cluster.
+    # b) Then we will pass the data to containers using env variables or volume or configposix
+    # refer env variables or volume or configposix yaml for details.
+    # what is config map to pass the non sensitive data to application dynamically.
+
+    # Steps 
+    # Go to Directory
+    # go to vi editor and copy the above content
+    # save and exit
+    # create configmap kubectl apply -f <filename.yaml>
+    # Check config map, kubectl get secrets
+    # To describe the config map, kubectl describe secrets <secrets-name>
+    # 

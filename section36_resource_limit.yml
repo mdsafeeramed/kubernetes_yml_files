@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-limit
+spec:
+  containers:
+  - name: app
+    image: alpine
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+
+# Resource Request
+# 1) Resource request allows user to define a resource limit, user expect a container to use.
+# 2) Kube Scheduler will manage resource request and avoid scheduling on node, which don’t have enough resources.
+# 3) Note : Containers are allowed to use more or less than the request resource. Resource Request is to manage the scheduling only.
+# 4) Memory is measure in Bytes. User is allowed to define in MegaByte as well.
+# 5) Requests for CPU resources are measured in cpu units. 1 vCPU means 1000 CPU Unit.
+
+# Resource Limit
+# 1) Resource Limits used to Limit the container’s resource uses.
+# 2) Limits are imposed at RunTime Container.
+
+# Execute on singlenode.
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>

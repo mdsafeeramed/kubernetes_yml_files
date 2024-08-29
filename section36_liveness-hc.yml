@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-probe
+spec:
+  containers:
+    - name: liveness
+      image: busybox
+      args:
+        - /bin/sh
+        - -c
+        - touch /tmp/healthcheck; sleep 60; rm -rf /tmp/healthcheck; sleep 600
+      livenessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/healthcheck
+        initialDelaySeconds: 5
+        periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-probe-http
+spec:
+  containers:
+    - name: liveness-nginx
+      image: nginx
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 3
+        periodSeconds: 3
+
+#CONTAINERS Health:
+
+#1) Kubernetes is feature Rich, and provide number of features to monitor the containers.
+#2) Active Monitoring Helps K8s to decide the container state and Auto Restart in Case of Container Failure.
+
+#Liveness Probe :
+#1) Liveness probe helps to determine the Container State.
+#2) By Default, K8s only consider container to be down, if container process stops.
+#3) Liveness probe helps user to improve & customized this Container Monitoring mechanism.
+#4) User can execute Two types of Liveness probes - Run Command in Container, Periodic HTTP Health Check.
+#5) Liveness via Container Command manifest.
+#6) initialDelaySeconds: How long to wait before sending a probe after a container starts.
+#7) periodSeconds: How often a probe will be sent.
+#8) Liveness via HTTP Request manifest.
+#9) timeoutSeconds: How long a request can take to respond before it’s considered a failure.
+
+#Steps:
+# Execute on singlenode.
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using liveness.yaml
+# 3) copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+# 7) for liveness http
