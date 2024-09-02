@@ -1,0 +1,293 @@
+KUBERNETES BASIC PART 2
+
+1) Services
+2) Labels
+
+****Services:****
+
+1) Service is used to Access the Application Running on Pods.
+2) Pods are Dynamic in Kubernetes, Pods created and terminated on Demand.
+3) Using Replication Controller, Pods are created and Terminated during the Scaling.
+4)  Using Deployments, Pods are Terminated and new Pods are take place during the Image Version Upgrade.
+5) Pod’s can’t be accessed directly, but thru a Service.
+6) Kubectl Expose command created a Service for Pods so that they can be accessible Externally.
+7) Creating a Service will create and End-Point for Pods.
+8) The set of Pods targeted by a Service is usually determined by a selector in manifest file.
+9) Define Service: 
+    Publish Service, Service Type.
+10) ClusterIP: Exposes the Service on a cluster-internal IP. 
+    Choosing this value makes the Service only reachable from within the cluster.
+12) NodePort: Exposes the Service on each Node’s IP at a static port. You’ll be able to contact the NodePort Service, from
+    outside the cluster, by requesting <NodeID>:<NodePort>
+13) Load Balancer: Exposes the Service externally using a cloud provider’s load balancer. NodePort and ClusterIP Services, 
+    to which the external load balancer routes, are automatically created.
+14) External Name : Maps the Service to the contents of the external name field, by returning a CNAME record.
+
+*** HAND ON BASIC Service ****
+Section 39 lab 251.
+
+What we will do in this lab
+
+1) Define Pod Manifest and Create Pod.
+2) Define Service Manifest and Create Service.
+3) Get Service URL.
+   minikube service <service-name> —url
+4) Describe Service.
+   kubectl svc <service-name>
+5) List All Services 
+   kubectl get svc
+6) Delete the Service
+   kubectl delete svc <service_name>
+
+
+POD Manifest:
+=============
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: nginx-webproxy
+    labels:
+        app: nginx-pod
+spec:
+    containers:
+    - name: nginx
+      image: nginx:1.16.0
+      ports:
+      - name: nginx-port
+      - containerPort: 80
+
+Service manifest_1:
+===============
+
+apiVersion: v1
+kind: Service
+metadata:
+ name: nginx-service
+spec:
+ selector:
+  app: nginx-pod
+ ports:
+ - protocol: TCP
+   port: 80
+   nodePort: 31010
+   targetPort: nginx-port
+
+
+Service manifest:
+===============
+
+apiVersion: v1
+kind: Service
+metadata:
+ name: my-service
+spec:
+ selector:
+  app: MyApp
+ ports:
+ - protocol: TCP
+ port: 80
+ targetPort: 9376
+
+
+# Execute on minikube
+# Section 39 Lab Number 251
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod-manifest.yaml
+# 3) copy the content from above(POD Manifest) and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) check if pod is created, kubectl get pods -o wide
+# 6) check describe of pod, kubectl desribe pod <pod-name>
+
+# Now we create service for this pod.
+
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using service-manifest.yaml
+# 3) copy the content from above(Service manifest_1) and save the file.
+# 4) create a service, kubectl apply -f <file-name.yml>
+# 5) Check if service is created "kubectl get svc"
+# Note: We notice that service is created.
+
+**** IF I need to access my service on a particular IP, I need to execute this command to get URL with IP address*****
+
+6) To get minikube url.
+   minikube service <service-name> --url
+   minikube service nginx-service --url
+
+   to get service name execute : "kubectl get svc"
+
+7) We get url, copy this url, access via browser(local machine) 
+or
+8) execute curl command " curl http://192.168.99.100:31010"
+
+9) To delete the service
+   kubectl delete service <service-name>
+   kubectl delete service nginx-service
+
+10) To describe the service
+   kubectl describe service <service-name>
+   kubectl describe service nginx-service
+
+
+**** LABELS *****
+
+1) Labels are key/value pairs that are attached to objects.
+2) Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users.
+3) Labels are like Tags in Cloud Providers like AWS , GCP.
+4) Labels can be attached to objects at creation time and subsequently added and modified at any time.
+5) For Labels you can follow Key-Value Pair Structure like.
+    Key: environment - Value: dev/qa/UAT/prod
+    Key: department - Value: engineering/cloudops/QA
+6) configuration file for a Pod that has two labels environment: production and app: nginx 
+
+    POD MANIFEST WITH TWO LABELS
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: nginx-webproxy
+    labels:
+        environment: production
+        app: nginx
+spec:
+    containers:
+    - name: nginx
+      image: nginx:1.16.0
+      ports:
+      - name: nginx-port
+      - containerPort: 80
+
+7) Labels are not Unique and multiple Labels can be added to One Object.
+8) Once Labels are attached to object, we can filter the results on Labels.
+9) Above approach is Called Label-Selector.
+10) Using Label Selectors user can use matching expressions to match Labels. 
+11) Sample Matching:
+    environment = production
+    tier != backend
+    environment in (production, qa, UAT)
+    tier notin (frontend, backend)
+12) User can use Labels to tag Nodes
+13)  Once Nodes are tagged, user can use label Selectors to run Pods only on matching Nodes.
+14) Tag Node Like:
+    kubectl get nodes
+    kubectl label nodes <your-node-name> disktype=ssd
+    kubectl get nodes --show-labels
+15) Run Pods on Specific Nodes by nodeSelector.
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: nginx-webproxy
+    labels:
+        environment: production
+        app: nginx
+spec:
+    containers:
+    - name: nginx
+      image: nginx:1.16.0
+      ports:
+      - name: nginx-port
+      - containerPort: 80
+    nodeSelector:
+    - disktype: ssd
+
+*** HAND ON LABEL LAB NUMBER 253 ***
+
+What we do in this lab
+
+1) Get All Nodes in Kubernetes Cluster.
+   kubectl get nodes
+2) Label Nodes with specific label.
+   kubectl label nodes <your-node-name> disktype=ssd
+3) Verify your node has the Label.
+   kubectl get nodes —show-labels
+4) Create Pods and verify the status.
+
+
+
+# steps
+ 1) Go to directory where scripts are stored, cd <diretory_name>
+ 2) Go to vi editor and name it using pod-manifest.yaml
+ 3) copy the content from below and save the file.
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: nginx-webproxy
+    labels:
+        app: nginx
+spec:
+    containers:
+    - name: nginx
+      image: nginx:1.16.0
+      ports:
+      - name: nginx-port
+      - containerPort: 80
+    nodeSelector:
+    - disktype: ssd
+
+4) To check how many nodes are present(Note we are using minikube) with labels
+   kube get nodes --show-labels
+   Note: output will show, nodes with it labels.
+
+5) Create label on nodes
+    kubectl label nodes <node-name> key=value
+    kubectl label nodes minikube disktype=ssd
+
+6) To check how many nodes are present(Note we are using minikube) with labels
+   kube get nodes --show-labels
+
+7) create a pod, kubectl apply -f <file-name.yml>
+
+8) Check if pod is created, kubectl get pods -o wide
+
+9) Check describe of pod, kubectl desribe pod <pod-name>
+
+
+**** LIFECYCLE OF PODS IN K8s*******
+
+Please refer Section39_Pod-Lifecycle.pdf for explanation
+
+Lifecycle Hooks
+1) LifeCycle Hooks allows the user to run specific code during specific events of a containers lifecycle.
+2) PostStart: This hook gets executed upon container creation but there is no guarantee that it will run after 
+   the container ENTRYPOINT.
+3) PreStop: This hook gets executed just before a container is terminated. This is a blocking call which means 
+   the hook execution must complete before the call to delete a container can be sent.
+4) There are two types of handlers which can be implemented in the hook implementation:
+   Exec: runs a specific command inside the container and the resources
+   consumed by the command are counted against the container.
+   HTTP: executes an HTTP request against a specific endpoint on the container.
+
+Manifest with post and pre:
+==========================
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-demo
+spec:
+ containers:
+ - name: lifecycle-demo-container
+   image: nginx
+   lifecycle:
+     postStart:
+       exec:
+        command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
+     preStop:
+       exec:
+        command: ["/bin/sh","-c","nginx -s quit; while killall -0 nginx; do sleep 1; done"]
+
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using lifecycle-hooks.yaml
+3) copy the content from above(Manifest with post and pre) and save the file.
+4) create a pod, kubectl apply -f <file-name.yml>
+5) Check describe of pod, kubectl desribe pod <pod-name>
+6) To check if post start is execited or not, exec to the container.
+   kubectl exec --it <pod-name> -- /bin/bash
+
+   kubectl exec --it lifecycle-demo -- /bin/bash
+
