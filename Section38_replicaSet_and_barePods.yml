@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod1
+  labels:
+    tier: frontend
+spec:
+  containers:
+  - name: application1
+    image: gcr.io/google-samples/hello-app:1.0
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod2
+  labels:
+    tier: frontend
+spec:
+  containers:
+  - name: application2
+    image: gcr.io/google-samples/hello-app:2.0
+
+
+# Before executing this file, please refer Section38_replica-set.yml file.
+# all steps are mentioned in Section38_replica-set.yml file.

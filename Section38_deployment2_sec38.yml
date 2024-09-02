@@ -1,0 +1,323 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chef-server
+  labels:
+    app: chef
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: chef-server
+  template:
+    metadata:
+      labels:
+        app: chef-server
+    spec:
+      containers:
+        - name: chef-server
+          image: 'chef/chefdk:4.9'
+          ports:
+            - containerPort: 8080
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - echo Hello from the Chef container; sleep 3600
+        - name: ubuntu
+          image: 'ubuntu:18.04'
+          ports:
+            - containerPort: 8080
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - echo Hello from the Ubantu container; sleep 3600
+
+
+# Executed on MINIKUBE
+# SECTION 38 , LAB 249, Deployment.apps 1
+
+# In this Hands on we learn about:
+# 1) How deployment is nore flexible.
+# 2) How deployment is more useful compare to the replicaset.
+# 3) Operations like deployment, rolling update, rollback, rollout application.
+
+# **** Rolling update ****
+
+# 1) Suppose we are running containers/application of version 1.1
+# 2) Now we have update features in version 1.2
+# 3) And you need to update/roll out applications in your setup.
+# 4) So what you need to do ? you need to edit the deployment yaml file with new version.
+# 5) Deployment will roll out the new containers/application.
+# 6) What is rolling upgrade means?
+# 7) In rolling upgrade means Three new pods will deployed with latest image
+#  (Based on replica set number mentioned in manifest)
+# 8) Rolling update means ? means that deployment will down old version single pods and up latest version pod.
+# 9) Once the pod is up with all operation, it will pick the second pod for rolling update.
+#   This process in followed one by one for each pods.
+# 10) By using this process, we are not halting traffic/breaking the application.
+# 11) Here its making the pods down one by one and upgrading the another pod with latest image this is called rolling update.
+
+# ****Hands on rolling updates****
+
+# Steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using deployment2.yaml
+# 3) Copy the content from above and save the file.
+
+
+# Manifest explanation
+
+# kind is Deployment (is a object)
+# it contain metadata and specification.
+# specification has replica, selector, template(metadata) and container spec
+# Deployment is one step higher than ReplicaSet. so it has all features like (replicaset, pod, containers)
+# Deploying two containerson pod.
+
+# 4) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# 5) Create a pod, kubectl apply -f <deployment-file-name.yml>
+# 6) check deployment " kubectl get deployment.apps/<name of the deployment-pod-name>"
+# kubectl get deployment.apps/chef-server
+# Note: we see deployment with desried, current and ready state.
+# 7) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# 8) Lets describe the deployment.
+# kubectl describe deployment.apps/chef-server
+# 9) Execute following command to get replicaset
+#   kubectl get replicaset or kubectl get rs
+# Note: Deployment is one step higher than ReplicaSet, so it directly manage by deployment.
+# 10) Check if pod is created, "kubectl get pods -o wide --show-labels"
+# Note: Each pods is running two containers with 3 replicas as mentioned in manifest.
+# 11) Go to website of docker hub and search for chef and check version avaiable.
+# 12) Pick One version higher.(4.9.10)
+
+# There are multiple ways to upgrade.
+
+# First way is:
+
+# 13) via command line
+# kubectl set image deployment/<deployment-name> <container-name>=<version picked for website>
+  
+#  for eg:
+
+# kubectl set image deployment/chef-server chef-server=chef/chefdk:4.9.10
+
+# 14) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 15) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: it will create one pod with containers with latest image, once it is up, it will terminate the first old pod.
+# follow these process till all replicas is updated.
+
+# 16) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# We see the version change-cause as none, cause we have not mentioned record in command, hence it is showing none.
+
+# 17) Lets upgrade again with latest version (4.9.13) this time.
+# kubectl set image deployment/<deployment-name> <container-name>=<version picked for website> --record
+#  for eg:
+
+# kubectl set image deployment/chef-server chef-server=chef/chefdk:4.9.13 --record
+# what record parameter will do ?, it will keep the record of this command in history.
+# So we have details of which version we have updated to.
+
+# 18) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 19) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: it will create one pod with containers with latest image, once it is up, it will terminate the first old pod.
+# follow these process till all replicas is updated.
+
+# 20) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# We see the version change-cause with command we have executed to rollout.
+
+# 21) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the latest of containers.
+
+# ****ROLLBACK THE CHANGES*****
+
+# Now we have see some issue in rollout update in image, you need to rollback.
+
+# 22) To rollback the image, execute following command
+# kubectl rollout undo deployment.apps/<deployment-name>
+# kubectl rollout undo deployment.apps/chef-server
+
+# 23) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 24) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# 25) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the old version of containers one below level.
+
+# **** Now we need to roolback to specfic revision ****
+
+# 26) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# 27) Note: Now i to want rollback to revision number 1
+# kubectl rollout undo deployment.apps/<deployment-name> --to-revision=1
+# kubectl rollout undo deployment.apps/chef-server --to-revision=1
+
+# 28) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 29) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# 30) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the old version of containers (revision 1).
+
+# **** Another way rollout (second method)****
+
+# which is not recommended.
+
+# 1) edit the deployment via command line
+
+# kubectl edit deployment.apps/<deployment-name>
+#  kubectl edit deployment.apps/chef-server
+# Note: it will open the deployment yaml of the deployment.
+# 2) we can edit any thing here.
+# let edit unbuntu container version from 18.04 to 20.04 (same like vi editor)
+# save and exit.
+# 3) As soon as we save and exit, rollout will triggers automatically.
+
+# 4) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 5) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+
+# 6) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the ubuntu is running on latest version of containers.
+
+
+# 7)  In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# We see the version change-cause as none. We dont have option to record command in second method.
+# Hence it is not recommened.
+
+# **** Deployment Pause and Deployment Resume ****
+
+# 1) To pause the deployment.
+
+# kubectl rollout pause deployment.apps/<deployment-name>
+# kubectl rollout pause deployment.apps/chef-server
+
+# Note: This particular command will pause the rollout of your deployment.
+# Now you can do a bulk changes in your deployment and these changes will not be rolled out in single go.
+# These changes will be rolled out once you will resume this particular rollout.
+
+# Let rollout again to latest version via first method.
+
+# 2) via command line
+# kubectl set image deployment/<deployment-name> <container-name>=<version picked for website>
+  
+#  for eg:
+
+# kubectl set image deployment/chef-server chef-server=chef/chefdk:4.9.16
+
+# 3) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# Note: We see that 0 out of 3 replicas have been updated, cos it is in pause state.
+
+# 4) Let make other again for ubuntu image with latest version.
+#  kubectl set image deployment/<deployment-name> <container-name>=<version picked for website>
+  
+#  for eg:
+
+# kubectl set image deployment/chef-server ubuntu=ubuntu:21.04 --record
+
+# 5) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# Note: We see that 0 out of 3 replicas have been updated, cos it is in pause state.
+
+# 6) Lets update resource on chef-server containers.(note we not updating image here, we are updating resources)
+# kubectl set resources deployment/<deployment-name> -c=<container-name> --limits=memory=250Mi
+
+# kubectl set resources deployment/<deployment-name> -c=chef-server --limits=memory=250Mi
+
+# 7) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# Note: We see that 0 out of 3 replicas have been updated, cos it is in pause state.
+
+# 8) To resume the rollout (after change bulk changes)
+# 
+# kubectl rollout resume deployment.apps/<deployment-name>
+# kubectl rollout resume deployment.apps/chef-server
+
+# 9) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: it will create one pod with containers with latest image, once it is up, it will terminate the first old pod.
+# follow these process till all replicas is updated.
+
+# 10) To check rollout status of deployment.
+
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 11) Let desribe the pod and check ther image version and resources on containers.
+# kubectl describe pod <pod-name>
+
+# Note: If you want to make changes in bulk and rollout, use pause/resume feature.
+
+# 12) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# **** to scale the replica in deployment ****
+
+# 13) To scale the replica in deployment.
+# kubectl scale deployment.apps/chef-server --replicas=5
+
+# 14) To check rollout status of deployment.
+
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 15) to de-scale just reduce replica number.
+# kubectl scale deployment.apps/chef-server --replicas=2
+
+ # 16) To check rollout status of deployment.
+
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 17) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+
+
+
+
+
+
+
+

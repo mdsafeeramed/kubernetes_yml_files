@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: deployment.apps
+metadata:
+  name: chef-server
+  labels:
+    app: chef
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: chef-server
+  template:
+    metadata:
+      labels:
+        app: chef-server
+    spec:
+      containers:
+        - name: chef-server
+          image: 'chef/chefdk:4.9'
+          ports:
+            - containerPort: 8080
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - echo Hello from the Chef container; sleep 3600
+        - name: ubuntu
+          image: 'ubuntu:18.04'
+          ports:
+            - containerPort: 8080
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - echo Hello from the Ubantu container; sleep 3600
+
+
+# Executed on MINIKUBE
+# SECTION 38 , LAB 248, Deployment.apps 1
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using deployment.yaml
+# 3) Copy the content from above and save the file.
+
+
+# Manifest explanation
+
+# kind is Deployment (is a object)
+# it contain metadata and specification.
+# specification has replica, selector, template(metadata) and container spec
+# Deployment is one step higher than ReplicaSet. so it has all features like (replicaset, pod, containers)
+# Deploying two containerson pod.
+
+# 4) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# 5) Create a pod, kubectl apply -f <deployment-file-name.yml>
+# 6) check deployment " kubectl get deployment.apps/<name of the deployment-pod-name>"
+# kubectl get deployment.apps/chef-server
+# Note: we see deployment with desried, current and ready state.
+# 7) To check roolout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# 8) Lets describe the deployment.
+# kubectl describe deployment.apps/chef-server
+# 9) Execute following command to get replicaset
+#   kubectl get replicaset or kubectl get rs
+# Note: Deployment is one step higher than ReplicaSet, so it directly manage by deployment.
+# 10) Check if pod is created, "kubectl get pods -o wide --show-labels"
+# Note: Each pods is running two containers with 3 replicas as mentioned in manifest.
+# =====
+
+

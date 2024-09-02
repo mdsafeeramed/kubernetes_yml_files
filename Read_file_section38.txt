@@ -1,0 +1,657 @@
+Section 38 deployment
+
+****App Scaling****
+
+1) Application scalability is the potential of an application to grow in time, being able to efficiently handle 
+   more and more requests per minute (RPM).
+2) In kubernetes, user can scale Pods.
+3) Pods can be scale Vertically or Horizontally. 
+
+****Stateless Application****
+
+1) Stateless app is an application program that does not save client data generated in one session for use in the next session with that client.
+2) Stateless applications can be scaled Horizontally.
+3) New Pods can be created for Stateless Applications.
+
+****Stateful Application****
+
+1) Stateful app is a program that saves client data from the activities of one session for use in the next session. 
+   The data that is saved is called the application’s state.
+2) DB services are stateful services, they have filesystem that can’t be split in multiple Instances.
+3) Stateful applications can be Scaled Vertically.
+
+****Scaling in Kubernetes****
+
+1) ReplicationController can be used to manage the App Scaling.
+2) ReplicationController ensures that a specified number of pod replicas are running at any point of time.
+3) ReplicationController makes sure that a pod or a set of pods is always up and available.
+
+****Hands on for ReplicationController****
+Section 38 lab 244
+
+# Execute on Minikube(Single node)
+# Section 38 Lab Number 244
+
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using replication_controller.yaml
+# 3) Copy the content from above and save the file.
+#apiVersion: v1
+#kind: ReplicationController
+#metadata:
+#  name: alipne-box-replicationcontroller
+#spec:
+#  replicas: 3
+#  selector:
+#    app: alipne-box
+#  template:
+#    metadata:
+#      name: alpine
+#      labels:
+#        app: alipne-box
+#    spec:
+#      containers:
+#      - name: alpine-box
+#        image: alpine
+#        command: ["sleep", "3600"]
+
+# Manifest explanation
+
+# kind is ReplicationController (is a object)
+# it contain metadata and specification.
+# specification has replica, selector, template(metadata) and container spec
+# 4) execute folowing command to check label attch to node
+#    kubectl get pods --show-labels
+# 5) Create a pod, kubectl apply -f <file-name.yml>
+# 6) check replicationcontroller " kubectl get replicationcontroller/<name of the replica contoller>"
+# kubectl get replicationcontroller/alipne-box-replicationcontroller
+# Note: we see replicationcontroller with desried, current and ready state.
+# 6) Check if pod is created, "kubectl get pods -o wide --show-labels"
+# 7) Lets delete the pod and see if replica is working.
+# kubectl delete pod <pod-name>
+# Note: We get message that pod is deleted.
+# 8)check replicationcontroller " kubectl get replicationcontroller/<name of the replica contoller>"
+# kubectl get replicationcontroller/alipne-box-replicationcontroller
+# Note: we notice that replicacontroller desrired , current and ready state is same.
+# 9) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice that deleted pod is re-created again and we have same replicas
+# 10) Suppose we need to scale application again horizontallly abobe 3 replicas
+# execute following command
+# kubectl scale --replicas=6 replicationcontroller/<define replicacontrollername>
+# kubectl scale --replicas=6 replicationcontroller/alipne-box-replicationcontroller
+# 11)check replicationcontroller " kubectl get replicationcontroller/<name of the replica contoller>"
+# kubectl get replicationcontroller/alipne-box-replicationcontroller
+# we notice that 6 replicas is created, 3 old and 3 new one.
+# 12) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice is 6 pods are running.
+# 13) to de-scale the pod/application (Just reduce the number in command)
+# kubectl scale --replicas=2 replicationcontroller/<define replicacontrollername>
+# kubectl scale --replicas=2 replicationcontroller/alipne-box-replicationcontroller
+# Note: we notice that latest created pods are terminating.
+# 14)check replicationcontroller " kubectl get replicationcontroller/<name of the replica contoller>"
+# kubectl get replicationcontroller/alipne-box-replicationcontroller
+# we notice that 2 replicas are running.
+# 15) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice is 2 pods are running.
+# 16) To delete the replicationcontroller
+# kubectl delete -f <filename.yml>
+# Note: same Yaml file which is used to create the pods.
+# 17)Check if pod is deleted, "kubectl get pods -o wide --show-labels"
+
+======
+
+****REPLICA-SETS****
+
+Replica-Set
+1) ReplicaSet is enhanced version of ReplicationController.
+2) Like ReplicationController, ReplicaSet's purpose is to maintain a stable set of replica Pods running at any given time.
+3) The main difference between a ReplicaSet and a ReplicationController right now is the selector support.
+4) Label Selectors is used to identify a set of objects in Kubernetes.
+5) ReplicaSets allow us to use “set-based” label selector.
+6) In, NotIn, Exists operators are used to Match K8s Object Labels.
+
+compare ReplicationController manifest
+
+spec:
+ replicas: 3
+ selector:
+ app: alipne-box
+ template:
+ metadata:
+
+ReplicaSet manifest
+
+spec:
+ replicas: 3
+ selector:
+ matchExpressions:
+ - {key: app, operator: In, values: [example, example, rs]}
+ - {key: teir, operator: NotIn, values: [production]}
+ template:
+ metadata:
+
+Manifest explanation:
+
+Differnence is selector, in replicaset we have matchExpression with operator.
+Single key can have multiple values and can be match/look in to the values to process further.
+also we can have multiple keys too, rest fileds are same has replicacontroller.
+
+Bare Pods & ReplicaSet
+1) While created Bare Pods, bare Pods do not have labels which match the selector of one of your ReplicaSets.
+2) ReplicaSet is not limited to owning Pods specified by its template-- it can acquire other Pods 
+   which have matching Labels.
+
+**** Hands On ****
+Section 38 Lab 246
+
+# Execute on Minikube(Single node)
+# Section 38 Lab Number 246
+
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using replication_controller.yaml
+# 3) Copy the content from above and save the file.
+#apiVersion: apps/v1
+#kind: ReplicaSet
+#metadata:
+#  name: myapp-replicas
+#  labels:
+#    app: myapp
+#    tier: frontend
+#spec:
+#  replicas: 3
+#  selector:
+#    matchExpressions:
+#      - {key: tier, operator: In, values: [frontend]}
+#  template:
+#    metadata:
+#      labels:
+#        app: myapp
+#        tier: frontend
+#    spec:
+#      containers:
+#      - name: nginx
+#        image: nginx
+#        ports:
+#        - containerPort: 80
+
+# Manifest explanation
+
+# Differnence is selector, in replicaset we have matchExpression with operator.
+# Single key can have multiple values and can be match/look in to the values to process further.
+# also we can have multiple keys too, rest fileds are same has replicacontroller.
+# kind is ReplicaSet (is a object)
+# it contain metadata and specification.
+# specification has replica, selector(with match expression), template(metadata) and container spec
+
+# 4) Execute folowing command to check label attach to node
+#    kubectl get pods --show-labels
+# 5) Create a pod, kubectl apply -f <file-name.yml>
+# 6) Check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: we see replicaset with desried, current and ready state.
+# 7) Let describe the replicaset
+# kubectl describe rs/myapp-replicas
+# 8) Check if pod is created, "kubectl get pods -o wide --show-labels"
+# 9) Lets delete the pod and see if replica is working.
+# kubectl delete pod <pod-name>
+# Note: We get message that pod is deleted.
+# 10) Check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# Note: we notice that replicacontroller desrired , current and ready state is same.
+# 11) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice that deleted pod is re-created again and we have same replicas
+# 12) Suppose we need to scale application again horizontallly abobe 3 replicas
+# execute following command
+# kubectl scale --replicas=6 replicaset.apps/<define replicacontrollername>
+# kubectl scale --replicas=6 replicaset.apps/myapp-replicas
+# 13)check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# we notice that 6 replicas is created, 3 old and 3 new one.
+# 14) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice is 6 pods are running.
+# 15) to de-scale the pod/application (Just reduce the number in command)
+# kubectl scale --replicas=2 replicaset.apps/<define replicacontrollername>
+# kubectl scale --replicas=2 replicaset.apps/myapp-replicas
+# Note: we notice that latest created pods are terminating.
+# 16)check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# we notice that 2 replicas are running.
+# 17) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice is 2 pods are running.
+# 18) To delete the replicaset
+# kubectl delete -f <filename.yml>
+# Note: same Yaml file which is used to create the pods.
+# 19)Check if pod is deleted, "kubectl get pods -o wide --show-labels"
+
+# Bare Pods
+
+# 1) Bare pods should not have same label keys. because replica set consider bare pods also a part of replica set
+#    cos it has same labels as replica set.
+# 2) Will deploying bare pods(normal pods with out replica set), make sure that labels are not same as replica set label.
+
+# refer Section38_replicaSet_and_barePods.yml for manifest
+
+# Lets take an example of barepods having same labels.
+
+# 1) Deploy the 2 replicaset using above steps.
+# 2) Go to directory where scripts are stored, cd <diretory_name>.
+# 3) Go to vi editor and name it using bare-pods.yaml
+# 4) Copy the content from Section38_replicaSet_and_barePods.yml and save it.
+# apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: mypod1
+#  labels:
+#    tier: frontend
+#spec:
+#  containers:
+#  - name: application1
+#    image: gcr.io/google-samples/hello-app:1.0
+
+#---
+
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: mypod2
+#  labels:
+#    tier: frontend
+#spec:
+#  containers:
+#  - name: application2
+#    image: gcr.io/google-samples/hello-app:2.0
+
+
+# Lets deploy the two bare pods which has same label as in replicaset
+# 5) Execute folowing command to check label attach to node
+#    kubectl get pods -o wide --show-labels
+# Note: We notice that we have 2 replicaset pods running.
+# 6) Check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: We notice that 2 replicasets are in desried state.
+# 7) Create a pod, kubectl apply -f <bare-pod-file-name.yml>
+# 8) After deployment, check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: We notice that 2 replicasets are in desried state(As shown in previous output).
+# 9) Execute folowing command to check label attach to node
+#    kubectl get pods o- wide --show-labels
+# We have deployed two bare pods but both the pods deployed are in terminating state , cos in replicaset we have mentioned 
+# 2 replicas.
+# As we have mentioned same labels as in replicaset, replicaset considered/controllers bare pods has part of replicaset and
+# Terminated both the pods, as we have mentioned only 2 replicas in manifest of replicaset.
+# 10) describe the any barepod
+# kubectl describe pod <bare-pod-name>
+# Note: We notice that bare pod is conrollered by replica set.
+# The pods which are using same lables as mentioned in replicaset, will consider/controllered by replicaset.
+
+# second example for bare pods scenario.
+
+# 1) delete the replicaset
+#  kubectl delete -f <replicaset-filename.yml>
+# 2) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# we don't have pods running
+# 3) Lets create a bare pods first.
+#   kubectl apply -f <bare-pod-filename.yml>
+# 4) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# Note: We notice 2 bare pods are running
+# 5) lets deploy replicaset now
+# Note: In yml file, make sure replica set number is 3, for deploying 3 replicas.
+#   kubectl apply -f <replicaset-filename.yml>
+# 6) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# Note: We notices that only one replica is created out of 3, because 2 bare pods are considered/contollered by replicaset
+#  as bare pods are use same label match expression as mentioned in replicaset.
+# Note: replicaset is one level higher than normal pods, so replicaset get previlage.
+# 7) After deployment, check replicaset " kubectl get replicaset.apps/<name of the replica contoller>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: We notice that 3 replicasets are in desried state.
+# it include 1 replicaset and two bare pods
+# 8) Let describe the replicaset
+# kubectl describe rs/myapp-replicas
+# Note: In output we notice that one only replica is created.
+# 9) Lets delete any one bare pods.
+# kubectl delete pod <pod-name>
+# 10) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# Note: We notice that second replicaset is created, instead of bare pod.
+
+# Note: Important: Replicaset need to maintain the set of the replica set.
+# Note: replicaset is one level higher than normal pods, so replicaset get previlage.
+
+=======
+
+**** Important Deployment *****
+
+Note: Deployment is higher level then replicaset/replicacontoller and pod.
+
+
+****Deployments****
+
+1) Deployment is one step higher than ReplicaSet.
+2) Deployment is desired State of ReplicaSet.
+3) Deployments control both ReplicaSets and Pods in a declarative manner.
+4) Smallest unit of Deployment, a Pod, runs containers. Each Pod has its own IP address and shares a PID namespace,
+   network, and host name.
+
+                                               Deployment
+                                               /       \
+         ReplicaSet-1                                                    ReplicaSet-n
+         /            \                                                  /           \
+    Pod-1             Pods-n                                          Pod-1          Pods-n
+     /           \                                                   /\\
+   Container-1 Container                                      Container Container Container-n
+
+
+****Use Case of Deployment****
+
+1) Create Deployment : Deploy Application Pods.
+2) Update Deployment : Push new version of Application in Controlled Manner.
+3) Rolling Upgrade : Upgrade Application in Zero Downtime.
+4) Rollback : Rollback the Upgrade in case of unstable Upgrade. Revise the Deployment State.
+5) Pause/Resume Deployment : Rollout a certain percentage.
+6) Deployment RollOut Upgrade and Rollback Update.
+
+
+**** Hands On LAB 1 ****
+
+Section 38 , Lab 248
+
+
+# Executed on MINIKUBE
+# SECTION 38 , LAB 249, Deployment.apps 1
+
+# In this Hands on we learn about:
+# 1) How deployment is nore flexible.
+# 2) How deployment is more useful compare to the replicaset.
+# 3) Operations like deployment, rolling update, rollback, rollout application.
+
+# **** Rolling update ****
+
+# 1) Suppose we are running containers/application of version 1.1
+# 2) Now we have update features in version 1.2
+# 3) And you need to update/roll out applications in your setup.
+# 4) So what you need to do ? you need to edit the deployment yaml file with new version.
+# 5) Deployment will roll out the new containers/application.
+# 6) What is rolling upgrade means?
+# 7) In rolling upgrade means Three new pods will deployed with latest image
+#  (Based on replica set number mentioned in manifest)
+# 8) Rolling update means ? means that deployment will down old version single pods and up latest version pod.
+# 9) Once the pod is up with all operation, it will pick the second pod for rolling update.
+#   This process in followed one by one for each pods.
+# 10) By using this process, we are not halting traffic/breaking the application.
+# 11) Here its making the pods down one by one and upgrading the another pod with latest image this is called rolling update.
+
+# ****Hands on rolling updates****
+
+# Steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using deployment2.yaml
+# 3) Copy the content from above and save the file.
+
+
+# Manifest explanation
+
+# kind is Deployment (is a object)
+# it contain metadata and specification.
+# specification has replica, selector, template(metadata) and container spec
+# Deployment is one step higher than ReplicaSet. so it has all features like (replicaset, pod, containers)
+# Deploying two containerson pod.
+
+# 4) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# 5) Create a pod, kubectl apply -f <deployment-file-name.yml>
+# 6) check deployment " kubectl get deployment.apps/<name of the deployment-pod-name>"
+# kubectl get deployment.apps/chef-server
+# Note: we see deployment with desried, current and ready state.
+# 7) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# 8) Lets describe the deployment.
+# kubectl describe deployment.apps/chef-server
+# 9) Execute following command to get replicaset
+#   kubectl get replicaset or kubectl get rs
+# Note: Deployment is one step higher than ReplicaSet, so it directly manage by deployment.
+# 10) Check if pod is created, "kubectl get pods -o wide --show-labels"
+# Note: Each pods is running two containers with 3 replicas as mentioned in manifest.
+# 11) Go to website of docker hub and search for chef and check version avaiable.
+# 12) Pick One version higher.(4.9.10)
+
+# There are multiple ways to upgrade.
+
+# First way is:
+
+# 13) via command line
+# kubectl set image deployment/<deployment-name> <container-name>=<version picked for website>
+  
+#  for eg:
+
+# kubectl set image deployment/chef-server chef-server=chef/chefdk:4.9.10
+
+# 14) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 15) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: it will create one pod with containers with latest image, once it is up, it will terminate the first old pod.
+# follow these process till all replicas is updated.
+
+# 16) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# We see the version change-cause as none, cause we have not mentioned record in command, hence it is showing none.
+
+# 17) Lets upgrade again with latest version (4.9.13) this time.
+# kubectl set image deployment/<deployment-name> <container-name>=<version picked for website> --record
+#  for eg:
+
+# kubectl set image deployment/chef-server chef-server=chef/chefdk:4.9.13 --record
+# what record parameter will do ?, it will keep the record of this command in history.
+# So we have details of which version we have updated to.
+
+# 18) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 19) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: it will create one pod with containers with latest image, once it is up, it will terminate the first old pod.
+# follow these process till all replicas is updated.
+
+# 20) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# We see the version change-cause with command we have executed to rollout.
+
+# 21) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the latest of containers.
+
+# ****ROLLBACK THE CHANGES*****
+
+# Now we have see some issue in rollout update in image, you need to rollback.
+
+# 22) To rollback the image, execute following command
+# kubectl rollout undo deployment.apps/<deployment-name>
+# kubectl rollout undo deployment.apps/chef-server
+
+# 23) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 24) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# 25) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the old version of containers one below level.
+
+# **** Now we need to roolback to specfic revision ****
+
+# 26) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# Note: Now i to want rollback to revision number 1
+# kubectl rollout undo deployment.apps/<deployment-name> --to-revision=1
+# kubectl rollout undo deployment.apps/chef-server --to-revision=1
+
+# 27) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 28) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# 29) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the old version of containers (revision 1).
+
+# **** Another way ****
+
+# which is not recommended.
+
+# 1) edit the deployment via command line
+
+# kubectl edit deployment.apps/<deployment-name>
+#  kubectl edit deployment.apps/chef-server
+# Note: it will open the deployment yaml of the deployment.
+# 2) we can edit any thing here.
+# let edit unbuntu container version from 18.04 to 20.04 (same like vi editor)
+# save and exit.
+# 3) As soon as we save and exit, rollout will triggers automatically.
+
+# 4) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 5) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+
+# 6) Lets get the describe of pods to check version and details
+# kubectl describe pods <pod-name>
+# we will see the ubuntu is running on latest version of containers.
+
+
+# 7)  In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# We see the version change-cause as none. We dont have option to record command in second method.
+# Hence it is not recommened.
+
+# **** Deployment Pause and Deployment Resume ****
+
+# 1) To pause the deployment.
+
+# kubectl rollout pause deployment.apps/<deployment-name>
+# kubectl rollout pause deployment.apps/chef-server
+
+# Note: This particular command will pause the rollout of your deployment.
+# Now you can do a bulk changes in your deployment and these changes will not be rolled out in single go.
+# These changes will be rolled out once you will resume this particular rollout.
+
+# Let rollout again to latest version via first method.
+
+# 2) via command line
+# kubectl set image deployment/<deployment-name> <container-name>=<version picked for website>
+  
+#  for eg:
+
+# kubectl set image deployment/chef-server chef-server=chef/chefdk:4.9.16
+
+# 3) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# Note: We see that 0 out of 3 replicas have been updated, cos it is in pause state.
+
+# 4) Let make other again for ubuntu image with latest version.
+#  kubectl set image deployment/<deployment-name> <container-name>=<version picked for website>
+  
+#  for eg:
+
+# kubectl set image deployment/chef-server ubuntu=ubuntu:21.04 --record
+
+# 5) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# Note: We see that 0 out of 3 replicas have been updated, cos it is in pause state.
+
+# 6) Lets update resource on chef-server containers.(note we not updating image here, we are updating resources)
+# kubectl set resources deployment/<deployment-name> -c=<container-name> --limits=memory=250Mi
+
+# kubectl set resources deployment/<deployment-name> -c=chef-server --limits=memory=250Mi
+
+# 7) To check rollout status of deployment.
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+# Note: We see that 0 out of 3 replicas have been updated, cos it is in pause state.
+
+# 8) To resume the rollout (after change bulh changes)
+# 
+# kubectl rollout resume deployment.apps/<deployment-name>
+# kubectl rollout resume deployment.apps/chef-server
+
+# 9) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: it will create one pod with containers with latest image, once it is up, it will terminate the first old pod.
+# follow these process till all replicas is updated.
+
+# 10) To check rollout status of deployment.
+
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 11) Let desribe the pod and check ther image version and resources on containers.
+# kubectl describe pod <pod-name>
+
+# Note: If you want to make changes in bulk and rollout, use pause/resume feature.
+
+# 12) In Deployment we can check the rollout history.
+# kubectl rollout history deployment.apps/<deployment-name>
+#  kubectl rollout history deployment.apps/chef-server
+
+# **** to scale the replica in deployment ****
+
+# 13) To scale the replica in deployment.
+# kubectl scale deployment.apps/chef-server --replicas=5
+
+# 14) To check rollout status of deployment.
+
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 15) to de-scale just reduce replica number.
+# kubectl scale deployment.apps/chef-server --replicas=2
+
+ # 16) To check rollout status of deployment.
+
+#  kubectl rollout status deployment.apps/<deployment-name>
+#  kubectl rollout status deployment.apps/chef-server
+
+# 17) execute folowing command to check pods running status
+#    kubectl get pods -o wide --show-labels
+
+
+
+
+
+
+

@@ -1,0 +1,215 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: myapp-replicas
+  labels:
+    app: myapp
+    tier: frontend
+spec:
+  replicas: 3
+  selector:
+    matchExpressions:
+      - {key: tier, operator: In, values: [frontend]}
+  template:
+    metadata:
+      labels:
+        app: myapp
+        tier: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+
+
+# Execute on Minikube(Single pods)
+# Section 38 Lab Number 246
+
+
+# steps
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using replication_set.yaml
+# 3) Copy the content from above and save the file.
+#apiVersion: apps/v1
+#kind: ReplicaSet
+#metadata:
+#  name: myapp-replicas
+#  labels:
+#    app: myapp
+#    tier: frontend
+#spec:
+#  replicas: 3
+#  selector:
+#    matchExpressions:
+#      - {key: tier, operator: In, values: [frontend]}
+#  template:
+#    metadata:
+#      labels:
+#        app: myapp
+#        tier: frontend
+#    spec:
+#      containers:
+#      - name: nginx
+#        image: nginx
+#        ports:
+#        - containerPort: 80
+
+# Manifest explanation
+
+# Differnence is selector, in replicaset we have matchExpression with operator.
+# Single key can have multiple values and can be match/look in to the values to process further.
+# also we can have multiple keys too, rest fileds are same has replicacontroller.
+# kind is ReplicaSet (is a object)
+# it contain metadata and specification.
+# specification has replica, selector(with match expression), template(metadata) and container spec
+
+# 4) Execute following commands to check pods running status
+#    kubectl get pods --show-labels
+# 5) Create a pod, kubectl apply -f <file-name.yml>
+# 6) Check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: we see replicaset with desried, current and ready state.
+# 7) Let describe the replicaset
+# kubectl describe rs/myapp-replicas
+# 8) Check if pod is created, "kubectl get pods -o wide --show-labels"
+# 9) Lets delete the pod and see if replica is working.
+# kubectl delete pod <pod-name>
+# Note: We get message that pod is deleted.
+# 10) Check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# Note: we notice that replicacontroller desrired , current and ready state is same.
+# 11) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice that deleted pod is re-created again and we have same replicas
+# 12) Suppose we need to scale application again horizontallly abobe 3 replicas
+# execute following command
+# kubectl scale --replicas=6 replicaset.apps/<define replicasetname>
+# kubectl scale --replicas=6 replicaset.apps/myapp-replicas
+# 13)check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# we notice that 6 replicas is created, 3 old and 3 new one.
+# 14) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice is 6 pods are running.
+# 15) to de-scale the pod/application (Just reduce the number in command)
+# kubectl scale --replicas=2 replicaset.apps/<define replicasetname>
+# kubectl scale --replicas=2 replicaset.apps/myapp-replicas
+# Note: we notice that latest created pods are terminating.
+# 16)check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# we notice that 2 replicas are running.
+# 17) Check if pod, "kubectl get pods -o wide --show-labels"
+# we notice is 2 pods are running.
+# 18) To delete the replicaset
+# kubectl delete -f <filename.yml>
+# Note: same Yaml file which is used to create the pods.
+# 19)Check if pod is deleted, "kubectl get pods -o wide --show-labels"
+
+# Bare Pods
+
+# 1) Bare pods should not have same label keys. because replica set consider bare pods also a part of replica set
+#    cos it has same labels as replica set.
+# 2) Will deploying bare pods(normal pods with out replica set), make sure that labels are not same as replica set label.
+
+# refer Section38_replicaSet_and_barePods.yml for manifest
+
+# Lets take an example of barepods having same labels.
+
+# 1) Deploy the 2 replicaset using above steps.
+# 2) Go to directory where scripts are stored, cd <diretory_name>.
+# 3) Go to vi editor and name it using bare-pods.yaml
+# 4) Copy the content from Section38_replicaSet_and_barePods.yml and save it.
+# apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: mypod1
+#  labels:
+#    tier: frontend
+#spec:
+#  containers:
+#  - name: application1
+#    image: gcr.io/google-samples/hello-app:1.0
+
+#---
+
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: mypod2
+#  labels:
+#    tier: frontend
+#spec:
+#  containers:
+#  - name: application2
+#    image: gcr.io/google-samples/hello-app:2.0
+
+
+# Lets deploy the two bare pods which has same label as in replicaset
+# 5) Execute following commands to check pods running status
+#    kubectl get pods -o wide --show-labels
+# Note: We notice that we have 2 replicaset pods running.
+# 6) Check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: We notice that 2 replicasets are in desried state.
+# 7) Create a pod, kubectl apply -f <bare-pod-file-name.yml>
+# 8) After deployment, check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: We notice that 2 replicasets are in desried state(As shown in previous output).
+# 9) Execute following commands to check pods running status
+#    kubectl get pods o- wide --show-labels
+# We have deployed two bare pods but both the pods deployed are in terminating state , cos in replicaset we have mentioned 
+# 2 replicas.
+# As we have mentioned same labels as in replicaset, replicaset considered/controllers bare pods has part of replicaset and
+# Terminated both the pods, as we have mentioned only 2 replicas in manifest of replicaset.
+# 10) describe the any barepod
+# kubectl describe pod <bare-pod-name>
+# Note: We notice that bare pod is conrollered by replica set.
+# The pods which are using same lables as mentioned in replicaset, will consider/controllered by replicaset.
+
+# second example for bare pods scenario.
+
+# 1) delete the replicaset
+#  kubectl delete -f <replicaset-filename.yml>
+# 2) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# we don't have pods running
+# 3) Lets create a bare pods first.
+#   kubectl apply -f <bare-pod-filename.yml>
+# 4) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# Note: We notice 2 bare pods are running
+# 5) lets deploy replicaset now
+# Note: In yml file, make sure replica set number is 3, for deploying 3 replicas.
+#   kubectl apply -f <replicaset-filename.yml>
+# 6) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# Note: We notices that only one replica is created out of 3, because 2 bare pods are considered/contollered by replicaset
+#  as bare pods are use same label match expression as mentioned in replicaset.
+# Note: replicaset is one level higher than normal pods, so replicaset get previlage.
+# 7) After deployment, check replicaset " kubectl get replicaset.apps/<name of the replicaSet>"
+# kubectl get replicaset.apps/myapp-replicas
+# or shortcut
+# kubectl get rs/myapp-replicas
+# Note: We notice that 3 replicasets are in desried state.
+# it include 1 replicaset and two bare pods
+# 8) Let describe the replicaset
+# kubectl describe rs/myapp-replicas
+# Note: In output we notice that one only replica is created.
+# 9) Lets delete any one bare pods.
+# kubectl delete pod <pod-name>
+# 10) Execute folowing command to check pods running
+#    kubectl get pods -o wide --show-labels
+# Note: We notice that second replicaset is created, instead of bare pod.
+
+# Note: Important: Replicaset need to maintain the set of the replica set.
+# Note: replicaset is one level higher than normal pods, so replicaset get previlage.
+
+
+
+
+
