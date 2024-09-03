@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-nodename
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-app
+spec:
+  containers:
+    - name: app
+      image: alpine
+      command:
+        - sleep
+        - '3600'
+
+
+# Execute on minikube(singlenode)
+# Section 40 , lab 257
+
+# 1) Let execute get pod command with namespace
+
+# kubectl get pod -o wide -n <namespace>
+
+# -n is namespace
+
+# kubectl get pod -n kube-system
+
+# Note: We notice that core dns pod is running
+
+# 2) To check service running in kube-system namespace
+
+# kubectl get services -o wide -n <namespace>
+
+# -n is namespace
+
+# kubectl get services -o wide -n kube-system
+
+# Note: We notice that kube dns service is running
+
+# ***** Lets see how pods are communicated using dns service *****
+
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod-dns.yaml
+# 3) Copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) Check if pod is created, kubectl get pods -o wide
+# 6) copy any ip address and execute curl <ipaddress>
+# 7) We see that curl is working fine.
+# 8) Now curl with dns domain name.
+#  curl 192-168-2-5.default.pod.cluster.local
+# curl: (6) Could not resolve host: 192-168-2-5.default.pod.cluster.local
+# Will get above error because we are doing curl from host machine, not from insire the containers.
+# 9) get inside that containers
+# kubectl exec --it frontend-app sh
+# we will ssh in to container.
+# 10) apk update
+# 11) apk add curl
+# 12) now execute curl 192-168-2-5.default.pod.cluster.local
+# 13) This time able to access from container.
+
+# this way PODS comunicate with each others.
+
+
+

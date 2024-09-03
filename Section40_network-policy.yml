@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sample-network-policy
+  namespace: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            role: test-network-policy
+      ports:
+      - protocol: TCP
+        port: 80
+
+
+# Execute on HA SETUP
+# Section 40 , lab 259
+
+#########################################################################################################
+# We are using HA setup for this LAB, Why we are not using minikube?
+# Because Minikube setup is not compactible for the network policy.
+# IF you execute this lab on a minikube, you will find that network policy is not applied on the pods.
+# Network policy needs an agent which is not present in minikube. hence using HA Setup.
+##########################################################################################################
+
+
+# PLEASE REFER SECTION40_network-policy-pod.yml file for steps 

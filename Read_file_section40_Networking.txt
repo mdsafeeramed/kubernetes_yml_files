@@ -1,0 +1,331 @@
+***** K8s NETWORKING ****
+
+****Kubernetes Network****
+
+1) Kubernetes Network Model define how networking between Pods behave.
+2) Many Network Implementation available in Kubernetes.
+3) We are Using Calico Network in K8s HA SetUp.
+4) Kubernetes imposes the following fundamental requirements on any networking implementation-
+5) Pods on a node can communicate with all Pods on all nodes without NAT.
+6) Agents on a node (e.g. system daemons, kubelet) can communicate with all pods on that node.
+7) Every Pod gets its own IP address.
+
+For More info please refer Section40_K8s+Networking+Overview.pdf
+
+**** CNI PlugIns ****
+
+1) CNI PlugIns are Kubernetes Network PlugIns.
+2) CNI PlugIns provide connectivity between Pods as per K8s Network Model.
+3) Multiple CNI Network PlugIns available. 
+
+***** Selecting Network PlugIn *****
+
+1) Selection of CNI PlugIn depends on your Business Needs.
+2) You may need to go thru the K8s Network Documentation to get the idea about different-different Network PlugIns.
+3) Our HA SetUp, we used Calico Network PlugIn.
+
+***** Install Network PlugIn ****
+
+1) Each Plugin have it’s own Installation way.
+2) In HA SetUp, we Installed Calico using Calico YML file.
+3) Note - K8s Nodes will remain NotReady until you install Network Plugin. And user won’t be able to Run Pods.
+
+
+**** DNS In K8s ****
+
+1) K8s Virtual Network uses DNS to allow PODs to locate other PODs and Services using Domain Name.
+2) DNS runs as a Service in kube-system namespace.
+3) Kubeadm/minikube use CoreDNS.
+4) All Pods in Kubeadm cluster are automatically given a Domain Name like -
+   pod-ip.namespace-name.pod.cluster.local
+5)  Pod DNS in Default NameSpace with IP 190.168.0.20
+    would look like 190-168-0-20.default.pod.cluster.local
+
+**** HANDS ON DNS K8s , Section40, 257 *****
+
+# Execute on minikube(singlenode)
+# Section 40 , lab 257
+
+# 1) Let execute get pod command with namespace
+
+# kubectl get pod -o wide -n <namespace>
+
+# -n is namespace
+
+# kubectl get pod -n kube-system
+
+# Note: We notice that core dns pod is running
+
+# 2) To check service running in kube-system namespace
+
+# kubectl get services -o wide -n <namespace>
+
+# -n is namespace
+
+# kubectl get services -o wide -n kube-system
+
+# Note: We notice that kube dns service is running
+
+# ***** Lets see how pods are communicated using dns service *****
+
+# 1) Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using pod-dns.yaml
+# 3) Copy the content from above and save the file.
+# 4) create a pod, kubectl apply -f <file-name.yml>
+# 5) Check if pod is created, kubectl get pods -o wide
+# 6) copy any ip address and execute curl <ipaddress>
+# 7) We see that curl is working fine.
+# 8) Now curl with dns domain name.
+#  curl 192-168-2-5.default.pod.cluster.local
+# curl: (6) Could not resolve host: 192-168-2-5.default.pod.cluster.local
+# Will get above error because we are doing curl from host machine, not from insire the containers.
+# 9) get inside that containers
+# kubectl exec --it frontend-app sh
+# we will ssh in to container.
+# 10) apk update
+# 11) apk add curl
+# 12) now execute curl 192-168-2-5.default.pod.cluster.local
+# 13) This time able to access from container.
+
+# this way PODS comunicate with each others.
+
+============================================================================================================
+
+***** K8s NETWORK POLICY ****
+
+****What is Network Policy*****
+
+1) K8s Network Policies are used to Control the Traffic Flow at IP Address or Port level.
+2)  Network Policy is Object in Kubernetes.
+3)  Pods can communicate using three Identifiers -
+    ○ Other pods that are allowed.
+    ○ Namespaces that are allowed.
+    ○ IP blocks.
+4) Network policies allows to Build a secure network by keeping Pods Isolated from traffic they do not need.
+5) By default, pods are non-isolated; they accept traffic from any source.
+6) Pods become isolated by having a NetworkPolicy that selects them.
+
+
+****** Network Policy Components *****
+
+1) podSelector : Determines to which Pods in namespace the NetworkPolicy will be applied.
+2) podSelector can select the Pods using Labels.
+3) An empty podSelector selects all pods in the namespace.
+
+Manifest:
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+ name: sample-net-policy
+ namespace: default
+spec:
+ podSelector:
+  matchLabels:
+   role: front-end
+
+4) Network Policy apply on Ingress, Egress and Both kind of Traffic.
+5) Ingress : Incoming Network Traffic coming into the Pod from another Source.
+6) Egress : Outgoing Network Traffic that leaving the Pod for another Destination. 
+
+
+****** To and From Selector ****
+1)  fromSelector : Selects Ingress Traffic that will be allowed on Pods.
+2)  toSelector : Selects Egress Traffic that will be allowed from Pods.
+
+manifest with podSelector:
+
+...
+ ingress:
+ - from:
+ - podSelector:
+ matchLabels:
+ - role: client
+
+manifest with namespaceSelector:
+
+ ingress:
+ - from:
+ - namespaceSelector:
+ matchLabels:
+ role: client
+
+manifest with IPBLOCK:
+
+ingress:
+ - from:
+ - ipBlock:
+ cidr: 172.17.0.0/16
+
+ **** Ports in Network Policy *****
+
+ 1) Ports : Specify one or more Ports that allow Traffic. 
+
+ Manifest for ingress port:
+
+ ingress:
+ - from:
+ ports:
+ - protocol: TCP
+ port: 80
+
+ Manifest for egress port:
+
+ egress:
+ - to:
+ ports:
+ - protocol: TCP
+ port: 32000
+ endPort: 32768
+
+**** HANDS ON NETWORK POLICY ****
+Section40, lab 259
+
+
+# Execute on HA SETUP
+# Section 40 , lab 259
+
+#########################################################################################################
+# We are using HA setup for this LAB, Why we are not using minikube?
+# Because Minikube setup is not compactible for the network policy.
+# IF you execute this lab on a minikube, you will find that network policy is not applied on the pods.
+# Network policy needs an agent which is not present in minikube. hence using HA Setup.
+##########################################################################################################
+
+
+# 1) On Master Node : Go to directory where scripts are stored, cd <diretory_name>
+# 2) Go to vi editor and name it using network-policy-pod.yaml
+# 3) Copy the content from above and save the file. (creating two pods)
+# 4) Check if "network-policy"(Can be any name) namespace is present or not
+#    kubectl get namespaces
+# we don't have the name space of this name.
+# 5) Lets create a namespace
+#    kubectl create namespace <name-space-name>
+#    kubectl create namespace network-policy
+# 6) Check if "network-policy" namespace is present or not
+#    kubectl get namespaces
+# yes, it is present now.
+# 7) Check labels attached to newly created namespace.
+#    kubectl get namespace --show-labels
+# we notice that required labels are not present.
+# 8) Lets create a label on namespace.
+# kubectl label namespace <namespace-name> <key=value>
+# kubectl label namespace network-policy role=test-network-policy
+# Why i am attaching, i want to show ingress and egress rules from this namespace.
+# 9) Check labels attached to newly created namespace.
+#    kubectl get namespace --show-labels
+# We notice that label is attached.
+# 10) Lets create a pod.
+#  kubectl apply -f <file-name.yml>
+# 11) Check if pod is created in namespace
+#    kubectl get pods -o wide -n network-policy
+# 2 pods are created, nginx-pod and busybox-pod
+# 12) Let access nginx-pod from busybox-pod
+# 13) execute following command
+# kubectl exec -n <namespace-name> <from-pod> -- <command> <destination IP>
+# kubectl exec -n network-policy busybox-pod -- curl 192.168.36.195
+# We see that command is executing and we are able to see nginx page.
+
+#=================================================================================#
+# **** UP TO THIS WE HAVE NOT USE ANY NETWORK POLICY *****
+# All Pods are communicating with each other, cos we have not isolated the network.
+# Network will be isolated only by appling network policy.
+#==================================================================================#
+
+
+# **** Lets apply network policy *****
+
+# 14) On Master Node : Go to directory where scripts are stored, cd <diretory_name>
+# 15) Go to vi editor and name it using network-policys.yaml
+# 16) section40_network-policy.yml file  contents
+
+#apiVersion: networking.k8s.io/v1
+#kind: NetworkPolicy
+#metadata:
+#  name: sample-network-policy
+#  namespace: network-policy
+#spec:
+#  podSelector:
+#    matchLabels:
+#      app: frontend
+#  policyTypes:
+#  - Ingress
+#  - Egress
+#  ingress:
+#    - from:
+#      - namespaceSelector:
+#          matchLabels:
+#            role: test-network-policy
+#      ports:
+#      - protocol: TCP
+#        port: 80
+
+# 17) Copy till mentioned below and save the file.(So that pods network is isolated, no ingress/egress traffic allowed.)
+
+#apiVersion: networking.k8s.io/v1
+#kind: NetworkPolicy
+#metadata:
+#  name: sample-network-policy
+#  namespace: network-policy
+#spec:
+#  podSelector:
+#    matchLabels:
+#      app: frontend
+#  policyTypes:
+#  - Ingress
+#  - Egress
+
+# 18) Lets create a pod.
+#  kubectl apply -f <file-name.yml>
+
+# 19) Check if networkpolicy is created under namespace.
+# kubectl get networkpolicy -n <namespace-name> -o wide
+# kubectl get networkpolicy -n network-policy -o wide
+
+# 20) Let execute exec command again previous used in step12 and step 13
+# execute following command
+# kubectl exec -n <namespace-name> <from-pod> -- <command> <destination IP>
+# kubectl exec -n network-policy busybox-pod -- curl 192.168.36.195
+# We see that command is not executing and we are not able to see nginx page.
+# This is because we have isolated the n/w using network policy and ingress and egress traffic is not allowed.
+
+# 21) Lets add ingress and egress changes in network-policy.yml file.
+# 22) vi the network-policy.yml file again
+# 23) copy the entire content from below.
+
+#apiVersion: networking.k8s.io/v1
+#kind: NetworkPolicy
+#metadata:
+#  name: sample-network-policy
+#  namespace: network-policy
+#spec:
+#  podSelector:
+#    matchLabels:
+#      app: frontend
+#  policyTypes:
+#  - Ingress
+#  - Egress
+#  ingress:
+#    - from:
+#      - namespaceSelector:
+#          matchLabels:
+#            role: test-network-policy
+#      ports:
+#      - protocol: TCP
+#        port: 80
+
+
+
+# 24) Lets re-create a network policy again.
+#  kubectl apply -f <file-name.yml>
+
+# 25) Check if networkpolicy is created under namespace.
+# kubectl get networkpolicy -n <namespace-name> -o wide
+# kubectl get networkpolicy -n network-policy -o wide
+
+# 26) Let execute exec command again previous used in step12 and step 13
+# execute following command
+# kubectl exec -n <namespace-name> <from-pod> -- <command> <destination IP>
+# kubectl exec -n network-policy busybox-pod -- curl 192.168.36.195
+# We see that command is executing and we are able to see nginx page again after applying ingress network policy
+
