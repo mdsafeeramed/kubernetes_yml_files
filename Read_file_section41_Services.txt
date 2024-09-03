@@ -1,0 +1,666 @@
+***** SERVICES ADVANCED ******
+
+***** HOW TO USE K8s SERVICES ******
+
+***** What is ServiceType ******
+
+1) Each Service has a Type. ServiceType define how and where Service will Expose the Application.
+2) There are 4 Types:
+   ○ ClusterIP
+   ○ NodePort
+   ○ LoadBalancer
+   ○ ExternalName
+
+
+  *** ClusterIP Service ****
+
+1) ClusterIP Service expose Application within Cluster Network.
+2) Use ClusterIP, when client is Other Pods within the Cluster. 
+
+**** NodePort Service ****
+
+1) NodePort Service expose Application Outside Cluster Network.
+2) Use NodePort, when client is accessing the Service from Outside the Cluster.
+
+
+**** LoadBalancer Service ****
+
+1)  Load Balancer Service also expose Application to Outer World but Cloud ILB is required.
+
+
+**** HANDS ON LAB ****
+Execute on minikube (single node)
+
+
+In This lab we will :-
+
+1) Deploy the pods.
+2) Create the services.
+3) How the client can access the application running in a pod by a service.
+
+
+*** Lets depoly a POD first *****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using deployment-pod.yaml
+3) copy the content from the file Section41_deployment_section41.yml, save and exit
+  apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-server
+  labels:
+    app: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+
+4) create a pod, kubectl apply -f <file-name.yml>
+5) lets describe the deployment.
+   kubectl describe deployment.apps/<deployment-name>
+   kubectl describe deployment.apps/nginx-server
+6) Check if pod is created. 
+   kubectl get pods -o wide --show-labels
+
+*** Lets first Create a service for clusterip ****
+
+7) Go to directory where scripts are stored, cd <diretory_name>
+8) Go to vi editor and name it using clusterip-svc.yml
+9) Copy the content from the file Section41_clusterIp-service.yml, save and exit
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
+
+10) create a service.
+   kubectl apply -f <file-name.yml>
+
+11) lets describe the service.
+   kubectl describe service/<service-name>
+   kubectl describe service/nginx-service
+
+*** Lets try to access your service ****
+
+12) Execute following command to access service
+    curl <service-name:port>
+    curl nginx-service:8080
+    we get error could not resolve host
+    because, this is the cluster kind of service, only and only access by k8s network.
+    means from containers.
+
+13) We are outside the k8s n/w, (host machine, where containers are running)
+
+*** Lets create a temprary pod ****
+
+14) Go to directory where scripts are stored, cd <diretory_name>
+15) Go to vi editor and name it using temp-pod-test.yml
+16) Copy the content from the file Section41_pod-svc-test.yml, save and exit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-svc-test
+spec:
+  containers:
+    - name: busybox
+      image: radial/busyboxplus:curl
+      command:
+        - sleep
+        - '3600'
+
+
+17) Create a pod.
+   kubectl apply -f <file-name.yml>
+
+18) Check if pod is created. 
+   kubectl get pods -o wide --show-labels
+
+
+19) Execute following command to access service
+    kubectl exec <from-pod-name> -- <command> <service-name:ports>
+
+    kubectl exec pod-svc-test -- curl nginx-service:8080
+    
+    We see that service is accessible .
+
+20) Note : custerip it is access with in the pods.(or from pods)
+    In step1 we have deployed one container pod with three replicas.
+    executing exec command with replica is not possible.
+    Hence deployed one more temp pod.
+
+
+*** Lets try with nodePort service ****
+
+
+21) Go to directory where scripts are stored, cd <diretory_name>
+22) Go to vi editor and name it using node-port-svc.yml
+23) Copy the content from the file Section41_nodeport-service.yml, save and exit
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service-nodeport
+spec:
+  type: NodePort 
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30099
+
+
+24) Create a service.
+   kubectl apply -f <file-name.yml>
+
+
+25) Lets describe the service.
+   kubectl describe service/<service-name>
+
+   kubectl describe service/nginx-service-nodeport 
+
+
+26) Lets access the service in host machine
+    curl localhost:30099
+
+    Note: We see that service is accessible
+
+27) To access using web browser, get public IP of machine
+    open the browser <ipadress:30099>
+
+    Note:
+    If you are using GCP cloud you need to allow all inbound traffic
+    If you are using AWS cloud, you need make sure the security group allow traffic from internet.
+    In local machine, get ip address of machine, open the browser <ipadress:30099>
+
+=================================================================================================================
+
+**** DISCOVER K8s SERVICES *****
+
+**** Service DNS Names ****
+
+1) Kubernetes DNS assign DNSNames to Services, allow applications within Cluster to easily locate the Service.
+2) Service Fully Qualified Name has the following formatService-name.namespace-name.svc.cluster-domain.example
+3) Defauly Cluster Domain is cluster.local
+
+**** Service DNS & Namespaces ****
+
+1) Service fully qualified Domain Name can be used to reach service from within any Namespace in Cluster.
+    Service-name.namespace-name.svc.cluster.local
+2) Pods within the same NameSpace can use the Service Name Only.
+    Service-name
+    
+**** HANDS ON SERVICES DISCOVER IN K8s *****
+
+1) Let see how many services are running in cluster.
+   kubectl get services -o wide
+   Note: We see that two services which we have created last lab
+
+2) Check the pods created
+   kubectl get pods -o wide
+   Note: We see that temp pods and deployment pod with replicas 3, which we created in last lab.
+
+3) In Last lab, we have accessed deployent pod from temp pod.
+
+   Execute following command to access service from temp pod.
+
+    kubectl exec <from-pod-name> -- <command> <service-name:ports>
+
+    kubectl exec pod-svc-test -- curl nginx-service:8080
+    
+    We see that service is accessible .
+
+4) Let create one more pod.
+
+5) Go to directory where scripts are stored, cd <diretory_name>
+6) Go to vi editor and name it using svc-dns-test.yml
+7) Copy the content from the file Section41_dns-service-pod.yml, save and exit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: svc-test-dns
+  namespace: service-namespace
+spec:
+  containers:
+    - name: busybox-svc
+      image: radial/busyboxplus:curl
+      command:
+        - sleep
+        - '3600'
+
+8) get namespace in cluster
+   kubectl get namespace --show-labels
+   Note: We dont have the namespace mentioned in manifest.
+
+9) Create a namespace
+   kubectl create namespace <namespace-name>
+
+   kubectl create namespace service-namespace
+
+10) get namespace in cluster again to check if namespace is created
+   kubectl get namespace --show-labels
+
+11) Create a pod.
+   kubectl apply -f <file-name.yml>
+
+12) Check if pod is created in namespace 
+   kubectl get pods -o wide --show-labels -n service-namespace
+
+13) Let try access again temp pod created in last lab. (same default namespace)
+
+    Execute following command to access service from temp pod.
+
+    kubectl exec <from-pod-name> -- <command> <service-name:ports>
+
+    kubectl exec pod-svc-test -- curl nginx-service:8080
+    
+    We see that service is accessible .
+
+14) let try to access from pod created in different name space.
+    kubectl exec -n <namespace-name> <pod-name> -- <command> <service-name>
+
+    kubectl exec -n service-namespace svc-test-dns -- curl nginx-service:8080
+
+    Note: We get error, host not resolved error. why?
+    because we are trying to access nginx service which is in differnt namespace.
+    svc-test-dns pod is in service-namespace
+    nginx-service:8080 is in default namespace
+    As both namespaces are different, we are not able to access.
+
+15) To access between different namespace services, it uses fulling qualified domain.
+    
+    kubectl exec -n service-namespace svc-test-dns -- curl nginx-service.default.svc.cluster.local:8080
+
+    Note: We can access the service.
+    *So this is the Namespace and the Service DNS*
+
+    Important point
+    a) Whenever the service and the request pod is part of the same namespace, no need to define conplete DNS of your service.
+    b) But, if the pod, which is the working as a client and the service are in different different namespace, we need
+       to define the fully qualified domain name of your service to access the service.
+
+    ==========================================================================================================
+
+    **** MANAGE SERVICES VIA INGRESS CONTROLLER *****
+
+    ***** What we learn in this chapter *****
+
+    1) What is an Ingress
+    2) Ingress Controllers
+    3) Routing to a Service
+    4) Routing to Service with Named Port
+
+    **** What is an Ingress ****
+
+ 1) Ingress in Kubernetes Manage the External Access to Service.
+     External_Client------Ingress-------------- Service
+ 2) Apart from NodePort Service, Ingress is capable of many more.
+ 3)  Provide the SSL Termination, Load Balancing, NameBase Virtual Hosting.
+
+
+***** Ingress Controllers******
+
+1) In order for the Ingress resource to work, the cluster must have an ingress controller running.
+2) Variety of Ingress Controller available in K8s to provide the multiple mechanism for external access of Service.
+3) You can deploy any number of Ingress Controller. 
+4) Ingress define a set of Routing Rules.
+5) Each Rule has a set of Paths, each with a Backend. Request matching a path will be routed to associated Backend. 
+
+Example : 
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+ name: sample-ingress
+spec:
+ rules:
+ - http:
+ paths:
+ - path: /testpath
+ pathType: Prefix
+ backend:
+ service:
+ name: test
+ port:
+ number: 80
+
+
+***** NamedPort *****
+1) If Service Use NamedPort, ingress can also use the port’s name to choose to which port it will route.
+
+Service manifest
+================
+
+apiVersion: v1
+kind: Service
+metadata:
+ name: nginx-service
+spec:
+ selector:
+ app: frontend
+ ports:
+ - name: nginx-port  ------->
+ protocol: TCP
+ port: 80
+ targetPort: 80
+
+ ingress controller with NamedPort
+ =================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+ name: sample-ingress
+spec:
+ rules:
+ - http:
+ paths:
+ - path: /testpath
+ pathType: Prefix
+ backend:
+ service:
+ name: test
+ port:
+ name: nginx-port  ------>
+
+ **** HANDS ON LAB ****
+ Section 41 Lab 265
+
+ **** Lets create pod first using Section41_nginx-deployment.yml ****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using nginx_deployment.yml
+3) Copy the content from the file Section41_nginx-deployment.yml, save and exit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-official-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-official
+  template:
+    metadata:
+      labels:
+        app: nginx-official
+    spec:
+      containers:
+        - name: nginx-official
+          image: 'nginx:latest'
+          ports:
+            - containerPort: 8080
+
+4) Create a deployment.
+   kubectl apply -f <file-name.yml>
+
+5) Get Deployment. 
+   kubectl get deployment
+
+6) Let describs the deployment.
+   kubectl describe deployment <deployment-name>
+
+   kubectl describe deployment nginx-official-deployment
+
+   *** Important ****
+
+   We have learned that ingress will talk to the service and service will talk to the deployment
+
+   =====
+
+
+   ******* Lets create a services using Section41_nginx-deployment-service.yml ****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using nginx_deployment.yml
+3) Copy the content from the file Section41_nginx-deployment-service.yml, save and exit
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-official-service
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      nodePort: 31303
+  selector:
+    app: nginx-official
+
+4) Create a service.
+   kubectl apply -f <file-name.yml>
+   kubectl apply -f nginx_deployment.yml
+
+5) Check the service is created
+   kubectl get service 
+
+6) Lets describe the service
+   kubectl describe service <service-name>
+
+   kubectl describe service nginx-official-service
+
+   ===
+
+
+   **** Lets deploy one more deployment using Section41_magicalnginx-nginx-deployment.yml ****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using magicalnginx_nginx_deployment.yml
+3) Copy the content from the file Section41_magicalnginx-nginx-deployment.yml, save and exit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: magicalnginx-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: magical-nginx
+  template:
+    metadata:
+      labels:
+        app: magical-nginx
+    spec:
+      containers:
+        - name: magical-nginx
+          image: 'anshuldevops/magicalnginx:latest'
+          ports:
+            - name: nginx-port
+              containerPort: 3000
+
+4) Create a deployment.
+   kubectl apply -f <file-name.yml>
+
+5) Get Deployment. 
+   kubectl get deployment
+
+6) Let describs the deployment.
+   kubectl describe deployment <deployment-name>
+
+   kubectl describe deployment magicalnginx-deployment
+
+=====
+
+ ******* Lets create a services using Section41_magicalnginx-deployment-service.yml ****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using magicalnginx-deployment-service.yml
+3) Copy the content from the file Section41_magicalnginx-deployment-service.yml, save and exit
+apiVersion: v1
+kind: Service
+metadata:
+  name: magical-nginx
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      nodePort: 31304
+      name: http
+  selector:
+    app: magical-nginx
+
+4) Create a service.
+   kubectl apply -f <file-name.yml>
+   kubectl apply -f magicalnginx-deployment-service.yml
+
+5) Check the service is created
+   kubectl get service 
+
+6) Lets describe the service
+   kubectl describe service <service-name>
+
+   kubectl describe service magical-nginx
+
+===
+###################################################################################################
+Important :
+We have created two pods(deployment) and respective services for each pod.
+a) Deployment(pod)--nginx-official-deployment(pod) ---service attached (nginx-official-service)
+b) Deployment(pod)--magicalnginx-deployment(pod)----service attached (magical-nginx)
+###################################################################################################
+===
+
+***** Lets access the service and check if it working **********
+
+1) Get list of services in cluster
+   kubectl get services.
+
+2) get minikube url for the services and perform curl on it.
+   minikube service <service-name> --url
+
+   minikube service magical-nginx --url
+   note: will get the url
+
+3) copy the url and perform curl operation
+   curl http://192.169.10.1:31304
+   Note: Will se that, service is accessible
+
+4) try second service is accessible
+
+5) get minikube url for the services and perform curl on it.
+   minikube service <service-name> --url
+
+   minikube service nginx-official-service --url
+   note: will get the url
+
+6) copy the url and perform curl operation
+   curl http://192.169.10.2:31303
+   Note: Will se that, service is accessible
+
+=====
+
+
+***** Lets create ingress controller using Section41_ingress-controller.yml*************
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using ingress-controller.yml
+3) Copy the content from the file Section41_ingress-controller.yml, save and exit
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-rules
+spec:
+  rules:
+  - host: nginx-official.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Exact
+        backend:
+          service:
+            name: nginx-official-service
+            port:
+              number: 80
+  - host: magical-nginx.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Exact
+        backend:
+          service:
+            name: magical-nginx
+            port:
+              number: 80
+
+
+
+4) Create a service.
+   kubectl apply -f <file-name.yml>
+   kubectl apply -f ingress-controller.yml
+
+5) Lets describe the service
+   kubectl describe ingress <ingress-name>
+
+   kubectl describe ingress nginx-rules
+   Note: will take host name
+   a) nginx-official.example.com
+   b) magical-nginx.example.com
+
+6) Now we can access the services using the host name itself.
+
+7) Get minikube ip
+   minikube ip
+   Note: will get ip of minikube
+
+8) perform curl operation on host
+   
+   curl 192.168.99.100 -H 'host: nginx-official.example.com'
+   Note: it is accessible and get all content of nginx.
+
+9) perform curl operation on another host
+   
+   curl 192.168.99.100 -H 'host: magical-nginx.example.com'
+   Note: it is accessible and get all content of nginx.
+
+
+ Important Points:
+
+1) If you are using GCP and AWS environment and have allowed inbounf traffic in cloud.
+    we can access directly via host name, no need of ip adresses.
+2) Why are we using ip address in step 8 and 9 above?
+   Cos we accessing local on the machine/terminal, hence we are using ip address.
+3) How ingress in working?
+   ingress is accessed using ----external traffic from internet.
+   Ingress is routing the traffic to hosts----host is routing the traffic----
+   -to the service---service is routing traffic to----deployment-----deployment is routing to---pod--
+   pod is routing to container.
+   This is the lifecycle.
+
+   Over the internet i am accessing the services by http or https, that service is basically sending the request 
+   to the ingress.
+   Ingress identify which host the user is trying to access and that will send that particular request to host.
+   Host will resolve itself on the service and the service node.
+   service will send the request to the deployment.
+   Deployment send the request to the pod or it will send the request to the containers.
+   container will fulfill the request because actual application is running inside the containers.
+
+
+   
+
+
+
+
+
+
+
+
+
+
