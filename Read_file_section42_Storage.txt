@@ -1,0 +1,822 @@
+****** K8s STORAGE ******
+
+***** K8s Storage Overview ******
+
+1) Container File System
+2) Volumes
+3) Persistent Volumes
+4) Volume Types
+
+***** Container File System *****
+
+1) Container File System is ephemeral.
+2) Files in container File System Exists only as long as the Container Exists.
+3) Data in container File System is lost as soon as Container Deleted or recreated. 
+
+
+***** Volumes ******
+
+1) Many Application needs a persistent Data.
+2) Volumes allows to store Data Outside the Container, while allow container to Access Data at RunTime.
+
+***** Persistent Volumes ******
+
+1) Volumes offer a way to provide external storage to container within the Pod/Container Specification.
+2) Persistent Volumes are a bit more advanced than Volumes.
+3) Persistent Volumes allow user to treat Storage as an Abstract Resource and consume it using Pods.
+
+**** Volume Types *****
+
+1) Volume & Persistent Volumes each have a Volume Type.
+2) Volume Type determines how storage will be handled.
+3) Various Volume Types supposts in K8s:
+   ○ NFS - Network file System
+   ○ Cloud Storage - AWS, GCP, Azure
+   ○ ConfigMaps & Secrets
+   ○ File System on K8s Node 
+
+
+***** Use of K8s Volume *****
+
+1) Volumes & VolumeMounts
+2) Sharing Volumes in Containers
+3) Common VolumeTypes
+
+**** Volumes & Volume Mount *****
+
+1) Volume : In Pod Spec, user can define the storage volume available in for the Pod.
+2) Volume Specify the VolumeType and where the data is actually store.
+3) VolumeMount : VolumeMount in container spec, refer the Volume in Pod Spec and provide a MountPath.
+
+Example with manifest/definition:
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pv-recycler
+spec:
+ volumes:
+ - name: sample-vol
+ hostPath:
+ path: /data
+ containers:
+ - name: pv-recycler
+ image: "k8s.gcr.io/busybox"
+ command: ["/bin/sh", "-c", "echo Hello Team"]
+ volumeMounts:
+ - name: sample-vol
+ mountPath: /output
+
+
+****** emptyDir Volume *****
+
+1) emptyDir : emptyDir created when Pod is assigned to Node and Persist as long as Pod running on the Node.
+2) Multiple containers can refer the same emptyDir Volume.
+3) Multiple containers in the Pod can read and write the same files in the emptyDir volume, 
+   though that volume can be mounted at the same or different paths in each container. 
+
+Manifest example:
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pv-recycler
+spec:
+ volumes:
+ - name: cache-vol
+ emptyDir: {}
+ containers:
+ - name: pv-recycler
+ image: "k8s.gcr.io/busybox"
+ command: ["/bin/sh", "-c", "echo Hello Team"]
+ volumeMounts:
+ - name: cache-vol
+ mountPath: /cache
+
+
+***** Share Volume ****
+
+1) User can use the same volumeMounts to share the same Volume to multiple container within the Same Pod.
+2) This is very powerful feature which can be used to data transformation of Data Processing.
+3) hostPath & emtpyDir volumeType support share volumes.
+
+Manifest example:
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pv-recycler
+spec:
+ volumes:
+ - name: cache-vol
+ emptyDir: {}
+ containers:
+ - name: pv-recycler
+ image: "k8s.gcr.io/busybox"
+ command: ["/bin/sh", "-c", "echo Hello Team"]
+ volumeMounts:
+ - name: cache-vol
+ mountPath: /cache
+ containers:
+ - name: pv-recycler-1
+ image: "k8s.gcr.io/busybox"
+ command: ["/bin/sh", "-c", "echo Hello Team"]
+ volumeMounts:
+ - name: cache-vol
+ mountPath: /cache/tmp
+
+**** HANDS ON LAB on Volume and volumeMounts using hostpath and emptyDir ****
+**** Section 42 Lab 269
+
+Execute on minikube(singlenode)
+
+**** Lets create a pod with volume storage hostpath ********
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using hostpath-volume-mount.yml
+3) Copy the content from the file Section42_hostpath-volume-mount.yml, save and exit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-pod
+spec:
+  volumes:
+  - name: hostpath-vol
+    hostPath:
+      path: /var/tmp   # Path of host machine
+  containers:
+  - name: hostpath-pod
+    image: 'k8s.gcr.io/busybox'
+    command: ["/bin/sh", "-c", "echo Hello Team, This is Sample File for HostVolume - $(date) >> /output/output.txt"]
+    volumeMounts:
+    - name: hostpath-vol
+      mountPath: /output
+
+4) check if hostpath mentioned in manifest in present in you hostmachine.
+   cd /var/tmp
+
+5) Go back to the directory where scripts are stored, cd <diretory_name>
+
+6) Create a pod.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f hostpath-volume-mount.yml
+
+7) Get pod details. 
+   kubectl get pod  -o wide
+
+8) Let describs the pod.
+   kubectl describe pod <pod-name>
+
+9) On hostmachine execute following command to check if file is created.
+    ls /var/tmp/
+    Note: We see that output.txt file is created.
+
+10) execute following command .
+    cat /var/tmp/output.txt
+    
+    Note: we see same line many times with different timestamp, As we have not define restart policy.
+    Once the process is finish, container will restart.
+
+11) Let delete the container
+    kubectl delete -f <file-name.yml>
+
+    kunectl delete -f hostpath-volume-mount.yml
+    Note: pod is deleted
+
+12) On hostmachine execute following command to check if file is created.
+    ls /var/tmp/
+    Note: We see that output.txt file is still present.
+    if cat /var/tmp/output.txt , we see data is still present.
+
+13) Lets re-create same pod again.
+    kubectl apply -f <file-name.yml>
+
+   kubectl apply -f hostpath-volume-mount.yml
+
+14) On hostmachine execute following command to check if file is created.
+    ls /var/tmp/
+    Note: We see that output.txt file is still present and started using same file.
+    if cat /var/tmp/output.txt , we see old data is present and on up of it started printing data in same file.
+
+
+15) Let delete the container
+    kubectl delete -f <file-name.yml>
+
+    kunectl delete -f hostpath-volume-mount.yml
+    Note: pod is deleted
+
+
+******** Lets Create POD with volume and volumeMounts using emptyDir approach *****
+
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using emptyDir-volume.yml
+3) Copy the content from the file Section42_emptyDir-volume.yml, save and exit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-emptydir
+spec:
+  containers:
+  - name: redis
+    image: redis
+    volumeMounts:
+    - name: redis-storage
+      mountPath: /data/redis  # mountpath of inside container
+  volumes:
+  - name: redis-storage
+    emptyDir: {}
+
+4) Note: we are not specifing host path of host machine.
+
+5) emptyDir will create dynamic path on container itself and host machine.
+   (emptyDirpersisit as long has container/pod is persisit)
+   (Restart or killing process will not delete the data from container)
+
+6) Create a pod.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f emptyDir-volume.yml
+
+7) Let describs the pod.
+   kubectl describe pod <pod-name>
+
+8) Get pod details. 
+   kubectl get pod  -o wide
+
+9) Let exec the pod (Login in to the container via /bin/bash, will go to root of container)
+   kubectl exec --it <pod-name> -- /bin/bash/
+
+   kubectl exec --it redis-emptydir -- /bin/bash
+
+   Note: Now we are inside of the POD with root prompt.
+
+10) execute " ls "
+   
+11) cd redis
+
+12) cd /data/redis  # path mountPath in manifest
+
+13) Let create a file in this path
+    
+    echo "Hello team, this file is created for testing" >> testfile.txt
+
+14) if you perform " ls "
+    We can see that file is created.
+
+15) execute " exit " to come out of pod.
+
+16) Again login to container/pod
+
+   kubectl exec --it <pod-name> -- /bin/bash/
+
+   kubectl exec --it redis-emptydir -- /bin/bash
+
+17) cd /data/redis
+
+18) ls
+
+19) Will see the file present.
+
+20) execute " exit " to come out of pod.
+
+21) Lets delete the pod and re-create the pod.
+
+22) Delete the pod
+    kubectl delete -f <file-name.yml>
+
+   kubectl  delete -f emptyDir-volume.yml
+
+23) Let get pod details
+    kubectl get podd -o wide
+    note: We see that pod is deleted.
+
+24) Let re-Create a pod again.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f emptyDir-volume.yml
+
+25) Again login to container/pod
+
+   kubectl exec --it <pod-name> -- /bin/bash/
+
+   kubectl exec --it redis-emptydir -- /bin/bash
+
+17) cd /data/redis
+
+18) ls
+    Note: We notice that file is not present.
+
+    Important:
+    emptyDir create dynamic volume.
+    emptyDir is persisit as long as POD is persisit.
+    for restart or killing process, file will be present, if we delete then only data is lost.
+
+====
+
+************ Hands on Common Volume/shared volume ****************
+Execute on minikube
+Section 42 and lab 270
+
+common volume means shared volume
+
+
+
+***** Lets create a POD with 2 containers share same volume *****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using common-volume.yml
+3) Copy the content from the file Section42_common-volume.yml, save and exit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shared-multi-container
+spec:
+  volumes:
+    - name: html
+      emptyDir: {}
+  containers:
+    - name: nginx-container
+      image: nginx
+      volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+    - name: debian-container
+      image: debian
+      volumeMounts:
+        - name: html
+          mountPath: /html
+      command:
+        - /bin/sh
+        - '-c'
+      args:
+        - while true; do date >> /html/index.html; sleep 5; done
+
+4) Note: we are not specifing host path of host machine.
+
+5) emptyDir will create dynamic path on container itself and host machine.
+   (emptyDirpersisit as long has container/pod is persisit)
+   (Restart or killing process will not delete the data from container)
+
+6) Create a pod.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f common-volume.yml
+
+7) Let describs the pod.
+   kubectl describe pod <pod-name>
+
+   kubectl describe pod shared-multi-container
+
+8) Get pod details. 
+   kubectl get pod  -o wide
+   Copy the IP of pod.
+
+9) Perform curl opearation
+   curl <ipadrees>
+
+10) We see that html.index content in nginx is replaced with current date.(nginx is web based application)
+    we also see that debian container is also reading the file from same path, cos we mount with same volume name.
+    Note: Debian container is not web based application, but still reading file from volume.
+    As both are sharing the same volume.
+
+11) Lets see this, execute exec command 
+    kubectl exec --it <pod-name> --bash
+
+    kubectl exec --it shared-multi-container --bash
+
+    Note: Defaulted container "nginx-container" out of: nginx-container, debian-container
+
+
+12) We will login to container (nginx-container)
+    
+    execute following commands on container
+
+    cd /usr/share/nginx/html/
+    ls
+    cat html.index
+    echo "testing testing" >> index.html
+    cat html.index
+
+    exit
+
+13) Perform curl opearation
+    curl <ipadrees>
+
+14) They are sharing the same volume.
+
+15) Lets see one more example
+
+16) Login to debian container
+
+   kubectl exec -it <Pod-name> -c <container-name> -- /bin/bash
+
+    kubectl exec -it shared-multi-container -c debian-container -- /bin/bash
+
+17) we will login to debain container
+    
+    echo "testing1" >> /html/d1.txt
+    echo "testing2" >> /html/index.html
+    exit
+
+18) Login again to pod container
+   
+    kubectl exec --it <pod-name> --bash
+
+    kubectl exec --it shared-multi-container --bash
+
+    Note: Defaulted container "nginx-container" out of: nginx-container, debian-container
+
+    By default it will pick niginx-container
+
+    cd /usr/share/nginx/html
+    ls
+    Note: we see d1.txt file is created.
+    exit
+
+19) Perform curl opearation
+    curl <ipadrees>
+
+    Note: We see that content is wriiten in shared volume.
+
+    =======================
+
+
+    *************  PERSISTENT VOLUME IN K8s ****************
+
+What we will learn in this chapter:
+
+1) Persistent Volumes
+2) Storage Classes
+3) PersistentVolume Claims
+4) Resizing Persistent Volume Claim
+    
+****** Persistent Volumes  ******
+
+1) PersistentVolumes are k8s Object that allow user to treat Storage as an Abstract Resource.
+2) PV is resource in the cluster just like a node is a cluster resource.
+3) PV uses a set of Attribute to describe the underlying storage resources (Disk or Cloud Storage), 
+   which will be used to store data.
+
+Manifest for example:
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+ name: static-persistent-volume
+spec:
+ capacity:
+ storage: 1Gi
+ accessModes:
+ - ReadWriteMany
+ hostPath:
+ path: /var/tmp
+ storageClassName: local-storage
+
+
+ ****** Storage Classes ******
+
+1) StorageClass allows K8s Administrator to Specify all type of Storage Service they offer on their Platform.
+
+Manifest example:
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+2) Admin cloud create a StorageClass called Slow to describe inexpensive storage for general Development use. 
+
+Manifest Example:
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: slow
+provisioner: kubernetes.io/aws-ebs
+parameters:
+ type: io1
+ iopsPerGB: "10"
+ fsType: ext4
+
+
+3) Admin cloud create a StorageClass called Fast for High I/O Operation Applications.
+
+Manifest Example:
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: fast
+provisioner: kubernetes.io/gce-pd
+parameters:
+ type: pd-ssd
+allowedTopologies:
+- matchLabelExpressions:
+ - key: failure-domain.beta.kubernetes.io/zone
+ values:
+ - us-central1-a
+
+ *********  allowVolume Expansion  **********
+
+1) allowVolumeExpansion - This field can accept boolean value only.
+2) This is the property of StorageClass and define whether StorageClass supports the ability to resize after they
+    are created.
+3) All Cloud Disk Supports this property.
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+
+
+******* Reclaim Policy *******
+
+1) persistentVolumeReclaimPolicy - This define, how the storage will be reused, when the PVs associated PVCs are deleted.
+2) Retain - Keep all the data. This require manual data cleanup and prepare for reuse.
+3) Delete - Delete underlying storage resources automatically (Support for Cloud Resource Only).
+4) Recycle - Automatically delete all data in underlying storage. Allow PVs to be reuse.
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+ name: static-persistent-volume
+spec:
+ capacity:
+ storage: 1Gi
+ accessModes:
+ - ReadWriteMany
+ hostPath:
+ path: /var/tmp
+ storageClassName: local-storage
+ persistentVolumeReclaimPolicy: 
+  Recycle
+
+
+********** PersistentVolumeClaim  **************
+
+1) PersistentVolumeClaim (PVC) is a request for storage by a user.
+2) PVCs define a set of attribute Similar to those of PVs.
+3) PVCs look for a PVs that is able to meet the criteria. If it found one, will automatically be bound to that PV
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+ name: myclaim
+spec:
+ accessModes:
+ - ReadWriteMany
+ resources:
+ requests:
+ storage: 1Gi
+ storageClassName: local-storage
+
+
+ ******************  HANDS ON PERSISTENT VOLUME *********
+
+ Execited on singlenode(minikube)
+
+ Section 42 Lab 272
+
+**** Lets start with store class Section42_localhost-sc.yml *******
+
+1) Admin need to design the store class, like local disk, application disk, slow disk, fast disk...etc.
+2) Also set some permesision and resource limits storage can store.
+
+===================
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using storage-class-local.yml
+3) Copy the content from the file Section42_localhost-sc.yml, save and exit
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Manifest explanation:
+
+1) Kind: storageClass is the object in K8s
+2) Name: local-storage (we are creating local stroage on host machine itself where K8s in installed)
+3) provisioner : kubernetes.io/no-provisioner (No-provisioner means creating local stroage on host machine)
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+4) Create a storage.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f storage-class-local.yml
+
+5) Let describs the storage.
+   kubectl describe storageClass.storage.K8s.io/<storage-name>
+
+   kubectl describe pod storageClass.storage.K8s.io/local-storage
+
+
+   ********* Now we need to create persistent volume (PV) using Section42_my-persistent-volume.yml*******
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using my-persistent-volume.yml
+3) Copy the content from the file Section42_my-persistent-volume.yml, save and exit
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-persistnt-vol
+spec:
+  storageClassName: local-storage
+  persistentVolumeReclaimPolicy: Recycle
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /var/tmp
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Manifest explanation:
+
+1) Kind: PersistentVolume is the object in K8s
+2) In specification we need to define which storageClass we are using for PersistentVolume.
+   storageClassName: local-storage
+3) persistentVolumeReclaimPolicy: Recycle
+4) capacity: storage: 1Gi
+5) accessModes: - ReadWriteOnce
+6) hostPath: path: /var/tmp (Path of host machine)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+4) Create a PersistentVolume.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f my-persistent-volume.yml
+
+6) Let describs the PersistentVolume.
+   kubectl describe persistentvolume/<persistentVolume-name>
+
+   kubectl describe persistentvolume/my-persistnt-vol
+
+7) Get PV details
+   kubectl get pv -o wide
+   Will get PV details
+
+======
+
+********* Now we need to define the PersistentVolumeClaim using  Section42_my-pvc.yml **************
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using my-pvc.yml
+3) Copy the content from the file Section42_my-pvc.yml, save and exit
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Manifest explanation:
+
+1) Kind: PersistentVolumeClaim is the object in K8s
+2) In specification we need to define which storageClass we are using for PersistentVolumeClaim.
+   storageClassName: local-storage
+3) accessModes: - ReadWriteOnce
+4) resources: requests:
+   storage: 100mi
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Important:
+
+This persistent volume claim will fulfill the property of th existing 
+ persistent volume (Section42_my-persistent-volume.yml)
+
+
+4) Create a PersistentVolumeClaim.
+
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f my-pvc.yml
+
+6) Let describs the PersistentVolume.
+   kubectl describe persistentvolumeclaim/<persistentVolume-name>
+
+   kubectl describe persistentvolumeclaim/my-pvc
+
+7) Get PV details
+   kubectl get pv -o wide
+   Will get PV details
+
+8) Get PVC details
+   kubectl get pvc -o wide
+
+   Note:
+   Will get pvc details and status is PENDING
+   Because, as it using existing PV, in PV we mentioned volumeBindingMode: WaitForFirstConsumer
+   hence it is waiting for consume for POD/Deployement.
+
+======
+***** Lets create a POD which consume resource of PV using  Section42_my-pv-pod.yml  *****
+
+1) Go to directory where scripts are stored, cd <diretory_name>
+2) Go to vi editor and name it using my-pv-pod.yml
+3) Copy the content from the file Section42_my-pv-pod.yml, save and exit
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pv-pod
+spec:
+  restartPolicy: Never
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["sh", "-c", "echo Hello Team, This is Persistnent Volume Claim >> /output/success.txt"]
+      volumeMounts:
+      - mountPath: /output
+        name: my-pv
+  volumes:
+    - name: my-pv
+      persistentVolumeClaim:
+        claimName: my-pvc
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Manifest explanation:
+
+1) Creating POD with name my-pv-pod
+2) Specification has restartPolicy Never
+3) volume name my-pv
+4) persistentVolumeClaim:
+        claimName: my-pvc
+5) volumeMounts:
+      - mountPath: /output
+        name: my-pv
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+4) Create a pod.
+   kubectl apply -f <file-name.yml>
+
+   kubectl apply -f my-pv-pod.yml
+
+5) Get PV details
+   kubectl get pv -o wide
+
+   Note: Will get PV details, STATUS CHANGE FROM available to Bound
+         Claim fiels was empty now changed to default/my-pvc
+
+6) Get PVC details
+   kubectl get pvc -o wide
+
+   Note: STATUS CHANGE FROM pending to Bound
+         volume field changed from empty to my-persistent-vol (name of the PV)
+         capacity field changed from empty to 1Gi has mentioned in PV manifest.
+         Access Modes field changed from empty to RWO has mentioned in PV manifest.
+
+5) Let describs the pod.
+   kubectl describe pod <pod-name>
+
+   kubectl describe pod my-pv-pod
+
+****** Lets update the PVC and check if it get update *************
+
+6) kubectl edit pvc <PVC-NAME>
+ 
+   kubectl edit pvc my-pvc
+
+   Note: Change the storage size from 100 to 200 and save and exit.
+
+****** Lets delete the PVC and check what happens *****************
+
+1) to delete we need to delete POD first which is consuming the resources.
+
+2) kubectl delete -f <file-name.yml>
+
+   kubectl delete -f my-pv-pod.yml
+
+3) Delete the PVC
+   kubectl delete -f my-pvc.yml
+
+4) Get PV details
+   kubectl get pv -o wide
+
+   Note: Will get PV details, STATUS CHANGE FROM Bound to available Again, cos reclaim policy in recycle.
+         
+=======================END===========================
+
